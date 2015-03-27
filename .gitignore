@@ -1,0 +1,11 @@
+*.elf
+*.hex
+*.map
+*.o
+*.o.d
+build/
+debug/
+dist/
+nbproject/private/
+nbproject/Makefile-*
+nbproject/Package-*
