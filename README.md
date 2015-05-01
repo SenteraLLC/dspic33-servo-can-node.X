@@ -1,2 +1,7 @@
-# dspic33-can-servo-node
-dsPIC33 CAN bus servo motor controller node.
+# dspic33-servo-can-node
+Microchip dsPIC33 CAN bus servo motor controller node.
+
+Recommended build tools:
+
+> * [MPLAB X IDE v3.00 Beta (integrated git support)](http://www.microchip.com/mplabx/)
+> * [MPLAB XC16 Compiler v1.24 (free edition)](http://www.microchip.com/xc16/)
