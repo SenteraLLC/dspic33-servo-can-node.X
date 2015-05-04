@@ -47,7 +47,12 @@ static void InitI2C()
 {
     // Initialize I2C1
     
+    ODCBbits.ODCB5 = 1;         // SDA1 = RB5 (open drain)
+    ODCBbits.ODCB6 = 1;         // SCL1 = RB6 (open drain)
     
+    I2C1BRG = 97;               // 100 kHz clock.
+
+    I2C1CON1bits.I2CEN = 1;     // Enable I2C1.
 }
 
 //==============================================================================
