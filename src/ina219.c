@@ -1,142 +1,112 @@
+////////////////////////////////////////////////////////////////////////////////
+///
+/// @file   $FILE$
+/// @author $AUTHOR$
+/// @date   $DATE$
+/// @brief  Source code file for defining hardware operation.   
+///
+////////////////////////////////////////////////////////////////////////////////
 
-
+// *****************************************************************************
+// ************************** System Include Files *****************************
+// *****************************************************************************
 #include <xc.h>
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
+
+// *****************************************************************************
+// ************************** User Include Files *******************************
+// *****************************************************************************
 #include "ina219.h"
+#include "i2c.h"
 
-void INA219Task()
+// *****************************************************************************
+// ************************** Defines ******************************************
+// *****************************************************************************
+
+// Slave address read and write commands.
+//
+// Note: INA219
+#define INA219_SADDR_READ  0x10U
+#define INA219_SADDR_WRITE 0x11U
+
+#define INA219_REG_ADDR_CFG          0x00     // Configuration Register
+#define INA219_REG_ADDR_SHUNT_VOLT   0x01     // Shunt Voltage Register
+#define INA219_REG_ADDR_BUS_VOLT     0x02     // Bus Voltage Register
+#define INA219_REG_ADDR_POWER        0x03     // Power Register
+#define INA219_REG_ADDR_CURRENT      0x04     // Current Register
+#define INA219_REG_ADDR_CAL          0x05     // Calibration Register
+
+// *****************************************************************************
+// ************************** Global Variable Definitions **********************
+// *****************************************************************************
+
+// *****************************************************************************
+// ************************** File-Scope Variable Definitions ******************
+// *****************************************************************************
+static uint16_t ina219_amp;
+static uint16_t ina219_volt;
+
+// *****************************************************************************
+// ************************** Function Prototypes ******************************
+// *****************************************************************************
+
+// *****************************************************************************
+// ************************** Global Functions *********************************
+// *****************************************************************************
+void INA219Init ( void )
 {
-    static int state = 1;
-    
-    switch (state)
+    // INA219 Configuration register data definition:
+    //  - byte 1: Configuration register address.
+    //  - byte 2: Configuration register MSB value.
+    //  - byte 3: Configuration register LSB value.
+    //
+    // Configuration register value:
+    //  - RST:   bits    15, 0b0    = peripheral reset is not performed.
+    //  - Spare: bits    14, 0b0
+    //  - BRNG:  bits    13, 0b0    = 16V full scale range is used.  Measured bus voltage (i.e. Vin-) max value expected is less than 10V.
+    //  - PG:    bits 12-11, 0b01   = Shunt voltage range of +-80mV used. At 10A shunt current (max) the shunt voltage is 80mV.
+    //  - BADC   bits 10- 7, 0b1010 = Bus voltage sampled with 12-bit resolution and 4 sample averaging.  2.13ms conversion time.
+    //  - SADC   bits  6- 3, 0b1010 = Shunt voltage sampled with 12-bit resolution and 4 sample averaging.  2.13ms conversion time.
+    //  - MODE   bits  2- 0, 0b111  = Shunt voltage and Bus voltage continuously sampled.
+    //
+    static const uint8_t cfg_data[] = 
     {
-        case 1:
-        {
-            //    1. Assert a Start condition on SDAx and SCLx.
-            I2C1CON1bits.SEN = 1;   // Enable start condition.
-            state++;
-            break;
-        }
-        case 2:
-        {
-            //    2. Send the I2C device address byte to the slave with a write indication.
-            if (I2C1CON1bits.SEN == 0)
-            {
-//                I2C1TRN = INA219_I2C_ADDR << 1;             // Write.
-                I2C1TRN = (INA219_I2C_ADDR << 1) | 0x01;    // Read.
-                state++;
-            }
-            break;
-        }
-        case 3:
-        {
-            //    3. Wait for and verify an Acknowledge from the slave.
-            if (I2C1STATbits.TRSTAT == 0)
-            {
-                if (I2C1STATbits.ACKSTAT == 0)  // Wait for ACK.
-                {
-//                    state++;
-                    state = 6;
-                }
-                else
-                {
-                    // TODO: ack was not received from the slave!
-                    Nop();
-                }
-            }
-            break;
-        }
-        case 4:
-        {
-            //    4. Send the serial memory address high byte to the slave.
-            I2C1TRN = 0x00;
-            state++;
-            break;
-        }
-        case 5:
-        {
-            //    5. Wait for and verify an Acknowledge from the slave.
-            if (I2C1STATbits.TRSTAT == 0)
-            {
-                if (I2C1STATbits.ACKSTAT == 0)  // Wait for ACK.
-                {
-                    state++;
-                }
-                else
-                {
-                    // TODO: ack was not received from the slave!
-                    Nop();
-                }
-            }
-            break;
-        }
-        case 6:
-        {
-            //    11. Enable the master reception to receive serial memory data.
-            I2C1CON1bits.RCEN = 1;
-            state++;
-            break;
-        }
-        case 7:
-        {
-            //    12. Generate an ACK or NACK condition at the end of a received byte of data.
-            if (I2C1CON1bits.RCEN == 0)
-            {
-                I2C1CON1bits.ACKEN = 1;     // Acknowledge Sequence Enable.
-                state++;
-            }
-            break;
-        }
-        case 8:
-        {
-            if (I2C1CON1bits.ACKEN == 0)
-            {
-                I2C1CON1bits.RCEN = 1;
-                state++;
-            }
-            break;
-        }
-        case 9:
-        {
-            if (I2C1CON1bits.RCEN == 0)
-            {
-                Nop();
-            }
-        }
-    }
-}
-
-
-//==============================================================================
-
-//int INA219WriteReg(INA219_REG_E reg, uint16_t data)
-//{
-//    
-//}
-
-//==============================================================================
-
-//int INA219ReadReg(INA219_REG_E reg, uint8_t *data)
-//{
-//    
-//}
-
-
-//==============================================================================
-
-void __attribute__((__interrupt__, no_auto_psv)) _I2C1Interrupt(void)
-{
+        INA219_REG_ADDR_CFG,
+        0b00001101,
+        0b01010111,
+    };
     
+    // Program the INA210 Configuration register.
+    I2CWrite( INA219_SADDR_WRITE, &cfg_data[ 0 ], sizeof( cfg_data ) );
 }
 
-// ? Start condition
-// ? Stop condition
-// ? Data transfer byte transmitted or received
-// ? Acknowledge transmit
-// ? Repeated Start
-// ? Detection of a bus collision event
+void INA219Service ( void )
+{
+    // DEBUG CODE (START): Read the configuration register value to verify its setting.
+    static uint8_t cfg_data_read[ 2 ];
+    
+    I2CRead( INA219_SADDR_READ, &cfg_data_read[ 0 ], 2U );
+    // DEBUG CODE (END)
+}
 
+uint16_t INA219AmpGet ( void )
+{
+    return ina219_amp;
+}
 
+uint16_t INA219VoltGet ( void )
+{
+    return ina219_volt;
+}
+        
+// *****************************************************************************
+// ************************** Static Functions *********************************
+// *****************************************************************************
 
-
-
+////////////////////////////////////////////////////////////////////////////////
+/// @brief  
+/// @param 
+/// @return
+////////////////////////////////////////////////////////////////////////////////

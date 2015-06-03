@@ -48,11 +48,11 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 #include <xc.h>
 
 /* Prototype function declaration for functions in the file */
-void __attribute__ ( (__interrupt__) )  _OscillatorFail( void );
-void __attribute__ ( (__interrupt__) )  _AddressError( void );
-void __attribute__ ( (__interrupt__) )  _StackError( void );
-void __attribute__ ( (__interrupt__) )  _MathError( void );
-void __attribute__ ( (__interrupt__) )  _DMACError( void );
+void __interrupt( no_auto_psv ) _OscillatorFail( void );
+void __interrupt( no_auto_psv ) _AddressError( void );
+void __interrupt( no_auto_psv ) _StackError( void );
+void __interrupt( no_auto_psv ) _MathError( void );
+void __interrupt( no_auto_psv ) _DMACError( void );
 
 /*
 Primary Exception Vector handlers:
@@ -76,7 +76,7 @@ of their application.
  * Overview:       Interrupt service routine for oscillator fail.
  *                 Clears the trap flag if OSCFAIL bit is set.
  *****************************************************************************/
-void __attribute__ ( (interrupt, no_auto_psv) ) _OscillatorFail( void )
+void __interrupt( no_auto_psv ) _OscillatorFail( void )
 {
     INTCON1bits.OSCFAIL = 0;    //Clear the trap flag
     while( 1 );
@@ -96,7 +96,7 @@ void __attribute__ ( (interrupt, no_auto_psv) ) _OscillatorFail( void )
  * Overview:       Interrupt service routine for Address Error.
  *                 Clears the trap flag if AddressErrr bit is set.
  *****************************************************************************/
-void __attribute__ ( (interrupt, no_auto_psv) ) _AddressError( void )
+void __interrupt( no_auto_psv ) _AddressError( void )
 {
     INTCON1bits.ADDRERR = 0;    //Clear the trap flag
     while( 1 );
@@ -116,7 +116,7 @@ void __attribute__ ( (interrupt, no_auto_psv) ) _AddressError( void )
  * Overview:      Interrupt service routine for stack error.
  *                Clears the trap flag if _StackError bit is set.
  *****************************************************************************/
-void __attribute__ ( (interrupt, no_auto_psv) ) _StackError( void )
+void __interrupt( no_auto_psv ) _StackError( void )
 {
     INTCON1bits.STKERR = 0;     //Clear the trap flag
     while( 1 );
@@ -136,7 +136,7 @@ void __attribute__ ( (interrupt, no_auto_psv) ) _StackError( void )
  * Overview:       Interrupt service routine for Math Error.
  *                 Clears the trap flag if _MathError bit is set.
  *****************************************************************************/
-void __attribute__ ( (interrupt, no_auto_psv) ) _MathError( void )
+void __interrupt( no_auto_psv ) _MathError( void )
 {
     INTCON1bits.MATHERR = 0;    //Clear the trap flag
     while( 1 );
@@ -156,7 +156,7 @@ void __attribute__ ( (interrupt, no_auto_psv) ) _MathError( void )
  * Overview:       Interrupt service routine for DMACError.
  *                 Clears the trap flag if _DMACError bit is set.
  *****************************************************************************/
-void __attribute__ ( (interrupt, no_auto_psv) ) _DMACError( void )
+void __interrupt( no_auto_psv ) _DMACError( void )
 {
     INTCON1bits.DMACERR = 0;    //Clear the trap flag
     while( 1 );
