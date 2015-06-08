@@ -7,6 +7,10 @@
       <itemPath>inc/ina219.h</itemPath>
       <itemPath>inc/hw.h</itemPath>
       <itemPath>inc/i2c.h</itemPath>
+      <itemPath>inc/adc.h</itemPath>
+      <itemPath>inc/wdt.h</itemPath>
+      <itemPath>inc/rst.h</itemPath>
+      <itemPath>inc/pwm.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -17,9 +21,12 @@
                    projectFiles="true">
       <itemPath>src/main.c</itemPath>
       <itemPath>src/ina219.c</itemPath>
-      <itemPath>src/traps.c</itemPath>
       <itemPath>src/hw.c</itemPath>
       <itemPath>src/i2c.c</itemPath>
+      <itemPath>src/adc.c</itemPath>
+      <itemPath>src/wdt.c</itemPath>
+      <itemPath>src/rst.c</itemPath>
+      <itemPath>src/pwm.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -29,6 +36,7 @@
   </logicalFolder>
   <sourceRootList>
     <Elem>src</Elem>
+    <Elem>inc</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -283,6 +291,7 @@
         <property key="UART 1" value="true"/>
         <property key="UART 2" value="true"/>
         <property key="debugoptions.useswbreakpoints" value="true"/>
+        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="hwtoolclock.instructionspeed" value="20"/>
         <property key="hwtoolclock.units" value="mips"/>

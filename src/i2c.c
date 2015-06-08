@@ -44,7 +44,7 @@ static void     I2CStopSeq  ( void );
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
-void I2CWrite( uint8_t saddr_wr_byte, const uint8_t* data, uint8_t data_len )
+void I2CWrite( uint8_t saddr, const uint8_t* data, uint8_t data_len )
 {
     uint8_t data_idx;
     
@@ -52,7 +52,11 @@ void I2CWrite( uint8_t saddr_wr_byte, const uint8_t* data, uint8_t data_len )
     I2CStartSeq();
     
     // Transmit the slave address and W/R byte.
-    I2CTxSeq( saddr_wr_byte );
+    //
+    // Note: The slave address occupies bits 7-1 of the transmitted byte.  The
+    // write/read command occupies bit 0 of the transmitted byte.  A write
+    // operation is identified by setting bit 0 as '0'.
+    I2CTxSeq( saddr << 1 );
     
     // Transmit the supplied data.
     for ( data_idx = 0U;
@@ -66,7 +70,7 @@ void I2CWrite( uint8_t saddr_wr_byte, const uint8_t* data, uint8_t data_len )
     I2CStopSeq();
 }
 
-void I2CRead( uint8_t saddr_wr_byte, uint8_t* data, uint8_t data_len )
+void I2CRead( uint8_t saddr, uint8_t* data, uint8_t data_len )
 {
     uint8_t data_idx;
     
@@ -74,7 +78,11 @@ void I2CRead( uint8_t saddr_wr_byte, uint8_t* data, uint8_t data_len )
     I2CStartSeq();
     
     // Transmit the slave address and W/R byte.
-    I2CTxSeq( saddr_wr_byte );
+    //
+    // Note: The slave address occupies bits 7-1 of the transmitted byte.  The
+    // write/read command occupies bit 0 of the transmitted byte.  A read
+    // operation is identified by setting bit 0 as '1'.
+    I2CTxSeq( ( saddr << 1 ) | 0b1 );
     
     // Stored received data in the supplied buffer.
     for ( data_idx = 0U;

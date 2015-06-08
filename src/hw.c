@@ -50,12 +50,25 @@
 #pragma config FCKSM = CSDCMD           // Clock Switching Mode Bits (Both Clock Switching and Fail-safe Clock Monitor are disabled)
 #pragma config PLLKEN = ON              // PLL Lock Enable Bit (Clock switch to PLL source will wait until the PLL lock signal is valid)
 
-// FWDT
-#pragma config WDTPOST = PS32768        // Watchdog Timer Postscaler Bits (1:32,768)
-#pragma config WDTPRE = PR128           // Watchdog Timer Prescaler Bit (1:128)
-#pragma config FWDTEN = OFF              // Watchdog Timer Enable Bits (WDT Enabled)        // DEBUG CODE
-#pragma config WINDIS = OFF             // Watchdog Timer Window Enable Bit (Watchdog timer in Non-Window Mode)
-#pragma config WDTWIN = WIN25           // Watchdog Window Select Bits (WDT Window is 25% of WDT period)
+// FWDT - Configuration Register
+//
+// WDT source is a low-power RC (LPRC) oscillator with nominal frequency 
+// (Flprc) of 32kHz.
+//
+// Twto := Watchdog time-out period
+//
+// Twto =   Tlprc * WDTPRE * WDTPOST
+//      = 31.25us *     32 *      32
+//      =    32ms
+//
+// Note: Flprc accuracy is +-15% (see datasheet); therefore, selection of 32ms 
+// nominal time-out period results in a minimum time-out period of ~27ms.
+//
+#pragma config WDTPOST = PS32    // Select WDT postscaler = 32.
+#pragma config WDTPRE  = PR32    // Select SDT prescaler = 32.
+#pragma config FWDTEN  = ON      // Enable WDT operation.
+#pragma config WINDIS  = OFF     // Operate WDT in Non-Window Mode.
+#pragma config WDTWIN  = WIN25   // N/A - b/c of 'WINDIS' setting.
 
 // FPOR
 #pragma config BOREN0 = ON              // Brown Out Reset Detection Bit (BOR is Enabled)
@@ -114,12 +127,6 @@ void HwTMREnable ( void )
     T1CONbits.TON = 1;
 }
 
-void HwWDTService ( void )
-{
-    // Clear the watchdog timer
-    asm("CLRWDT");
-}
-
 // *****************************************************************************
 // ************************** Static Functions *********************************
 // *****************************************************************************
@@ -152,7 +159,10 @@ static void HwOSCInit( void )
     CLKDIVbits.PLLPOST =  1;         // PLL output divided by 4.     (N2)
     PLLFBDbits.PLLDIV  = 30;         // PLL feedback divisor is 32.  (M)
     
-    while( OSCCONbits.LOCK == 0 );   // Wait for the PLL to lock.
+    // Wait for the PLL to lock.
+    //
+    // Note: The PLL lock time (Tlock) is a maximum of 3.1ms (see datasheet).
+    while( OSCCONbits.LOCK == 0 );   
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -165,25 +175,24 @@ static void HwI2C1Init( void )
     // Initialize the I2C hardware for 100KHz operation.  The hardware contains
     // a single I2C module (i.e. I2C1).
     //
-    // Fscl = Fcy    / ( ( I2CxBRG + 2 ) * 2 )
-    //      = 20MHz  / ( (      98 + 2 ) * 2 )
+    // Fscl =    Fcy  / ( ( I2CxBRG + 2 ) * 2 )
+    //      =  20MHz  / ( (      98 + 2 ) * 2 )
     //      = 100KHz
     //
     // Note: when the I2C1 module is enabled the state and direction pins
     // SCL1 & SDA1 are overwritten; therefore, no pin I/O configuration
     // (e.g. register ODCx) is needed.
     
-    
-    
+
     
     // I2C1CON1bits.I2CEN = 0;     // Disable I2C1
-    
-    
-    
-    
-    
-    
-    
+   
+//    ODCBbits.ODCB5 = 1;         // SDA1 = RB5 (open drain)
+//    ODCBbits.ODCB6 = 1;         // SCL1 = RB6 (open drain)
+//    
+//    I2C1BRG = 97;               // 100 kHz clock.
+//
+//    I2C1CON1bits.I2CEN = 1;     // Enable I2C1.
     
     I2C1BRG = 98;               // 100 kHz clock.
 
@@ -226,7 +235,7 @@ static void HwTMR1Init( void )
     // Note: timer configured for continuous operation in idle mode.  Idle
     // mode is not performed by the CPU; therefore, this setting is purely 
     // for robustness.
-    
+    //
     T1CONbits.TON   = 0;        // Disable Timer.
     T1CONbits.TCS   = 0;        // Select internal instruction cycle clock.
     T1CONbits.TGATE = 0;        // Select Timer (i.e. not Gated) mode.

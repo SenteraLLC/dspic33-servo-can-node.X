@@ -8,14 +8,14 @@
 /// @param 
 /// @return
 ////////////////////////////////////////////////////////////////////////////////
-void I2CWrite( uint8_t saddr_wr_byte, const uint8_t* data, uint8_t data_len );
+void I2CWrite( uint8_t saddr, const uint8_t* data, uint8_t data_len );
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief  Read data using the I2C interface.
 /// @param 
 /// @return
 ////////////////////////////////////////////////////////////////////////////////
-void I2CRead( uint8_t saddr_wr_byte, uint8_t* data, uint8_t data_len );
+void I2CRead( uint8_t saddr, uint8_t* data, uint8_t data_len );
 
 #endif	// I2C_H_
 
