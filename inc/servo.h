@@ -3,17 +3,13 @@
 /// @file   $FILE$
 /// @author $AUTHOR$
 /// @date   $DATE$
-/// @brief  Header file for defining hardware operation.   
+/// @brief   
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef HW_H_
-#define	HW_H_
+#ifndef SERVO_H_
+#define	SERVO_H_
 
+void ServoService ( void );
 
-void HwInit( void );
-void HwTMREnable ( void );
-void HwTMRDisable ( void );
-void HwWDTService ( void );
-
-#endif	// HW_H_
+#endif	// SERVO_H_

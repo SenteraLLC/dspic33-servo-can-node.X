@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////////////////////
 ///
 /// @file   $FILE$
@@ -19,7 +18,8 @@
 // *****************************************************************************
 // ************************** User Include Files *******************************
 // *****************************************************************************
-#include "wdt.h"
+#include "ver.h"
+#include "can.h"
 
 // *****************************************************************************
 // ************************** Defines ******************************************
@@ -32,6 +32,11 @@
 // *****************************************************************************
 // ************************** File-Scope Variable Definitions ******************
 // *****************************************************************************
+static const uint8_t  node_type; 
+static const uint8_t  rev_ver;
+static const uint8_t  min_ver;
+static const uint8_t  maj_ver;
+static const uint32_t serial_num;
 
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
@@ -40,31 +45,21 @@
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
-void WDTService ( void )
-{
-    // Clear the watchdog timer values.
-    //
-    // Note: Hardware specific function (see 'xc.h') defined for clearing
-    // the watchdog timer values.
-    ClrWdt();
-}
-
-void WDTEnable ( void )
-{
-    // Enable watchdog timer operation.
-    //
-    // Note: enabling of the watchdog timer causes a reset of the counter
-    // value.
-    //    
-    RCONbits.SWDTEN = 1;
-}
-
-void WDTDisable ( void )
-{
-    // Disable watchdog timer operation.
-    RCONbits.SWDTEN = 0;    
-}
 
 // *****************************************************************************
 // ************************** Static Functions *********************************
 // *****************************************************************************
+void VerService ( void )
+{
+    CAN_TX_NODE_VER_U version_msg;
+    
+    // Construct the Version CAN message.
+    version_msg.node_type  = node_type;
+    version_msg.rev_ver    = rev_ver;
+    version_msg.min_ver    = min_ver;
+    version_msg.maj_ver    = maj_ver;
+    version_msg.serial_num = serial_num;
+
+    // Send the Version message.
+    CANTxSet ( CAN_TX_MSG_NODE_VER, version_msg.data_u16 );
+}

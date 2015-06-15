@@ -8,6 +8,10 @@
 /// @param  
 /// @return 
 ////////////////////////////////////////////////////////////////////////////////
-void WDTService ( void )
+void WDTService ( void );
+
+void WDTEnable ( void );
+
+void WDTDisable ( void );
 
 #endif  // WDT_H_

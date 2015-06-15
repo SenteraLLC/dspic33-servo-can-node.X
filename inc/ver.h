@@ -7,13 +7,9 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef HW_H_
-#define	HW_H_
+#ifndef VER_H_
+#define	VER_H_
 
+void VerService ( void );
 
-void HwInit( void );
-void HwTMREnable ( void );
-void HwTMRDisable ( void );
-void HwWDTService ( void );
-
-#endif	// HW_H_
+#endif	// VER_H_

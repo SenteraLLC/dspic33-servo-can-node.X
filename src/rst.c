@@ -20,6 +20,7 @@
 // ************************** User Include Files *******************************
 // *****************************************************************************
 #include "rst.h"
+#include "can.h"
 
 // *****************************************************************************
 // ************************** Defines ******************************************
@@ -45,7 +46,8 @@
 #define RST_MASK            0xC2D3
 #define RST_MASK_POR        0x0001
 #define RST_MASK_BOR        0x0002
-#define RST_MASK_SW_FAULT   0xC2D0
+#define RST_MASK_SWR        0x0040
+#define RST_MASK_SW_FAULT   0xC290
 
 // *****************************************************************************
 // ************************** Global Variable Definitions **********************
@@ -80,7 +82,8 @@ void RSTStartup ( void )
     // Note: The ordering of the if-else conditions are necessary for expected
     // reset condition identification, since multiple bits within the reset
     // detail can be set (e.g. both POR and BOR are set on a power-on reset
-    // condition).
+    // condition).  The priority of annunciation is apparent from the ordering
+    // of statements within the if-else conditions.
     //
     if( ( rst_detail & RST_MASK_POR ) != 0 )
     {
@@ -92,9 +95,14 @@ void RSTStartup ( void )
         rst_cond = 2U;
     }
     else
-    if( ( rst_detail & RST_MASK_SW_FAULT ) != 0 )
+    if( ( rst_detail & RST_MASK_SWR ) != 0 )
     {
         rst_cond = 3U;
+    }
+    else
+    if( ( rst_detail & RST_MASK_SW_FAULT ) != 0 )
+    {
+        rst_cond = 4U;
     }
     else
     {
@@ -104,14 +112,16 @@ void RSTStartup ( void )
     }
 }
 
-uint16_t RSTCondGet ( void )
+void RSTService ( void )
 {
-    return rst_cond;
-}
-
-uint16_t RSTDetailGet ( void )
-{
-    return rst_detail;
+    CAN_TX_NODE_STATUS_U node_status_msg;
+    
+    // Construct the Node Status CAN message.
+    node_status_msg.reset_condition = rst_cond;
+    node_status_msg.reset_detail    = rst_detail;
+    
+    // Send the Node Status message.
+    CANTxSet ( CAN_TX_MSG_NODE_STATUS, node_status_msg.data_u16 );
 }
 
 // *****************************************************************************

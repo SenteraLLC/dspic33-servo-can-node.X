@@ -7,13 +7,9 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef HW_H_
-#define	HW_H_
+#ifndef UTIL_H_
+#define	UTIL_H_
 
+int16_t UtilPolyMul( uint16_t var, int32_t coeff[], uint8_t coeff_len );
 
-void HwInit( void );
-void HwTMREnable ( void );
-void HwTMRDisable ( void );
-void HwWDTService ( void );
-
-#endif	// HW_H_
+#endif	// UTIL_H_

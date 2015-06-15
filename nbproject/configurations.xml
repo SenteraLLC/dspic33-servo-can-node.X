@@ -11,6 +11,13 @@
       <itemPath>inc/wdt.h</itemPath>
       <itemPath>inc/rst.h</itemPath>
       <itemPath>inc/pwm.h</itemPath>
+      <itemPath>inc/can.h</itemPath>
+      <itemPath>inc/cfg.h</itemPath>
+      <itemPath>inc/nvm.h</itemPath>
+      <itemPath>inc/ver.h</itemPath>
+      <itemPath>inc/vsense.h</itemPath>
+      <itemPath>inc/util.h</itemPath>
+      <itemPath>inc/servo.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -27,6 +34,13 @@
       <itemPath>src/wdt.c</itemPath>
       <itemPath>src/rst.c</itemPath>
       <itemPath>src/pwm.c</itemPath>
+      <itemPath>src/can.c</itemPath>
+      <itemPath>src/cor.c</itemPath>
+      <itemPath>src/cfg.c</itemPath>
+      <itemPath>src/nvm.c</itemPath>
+      <itemPath>src/ver.c</itemPath>
+      <itemPath>src/vsense.c</itemPath>
+      <itemPath>src/util.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

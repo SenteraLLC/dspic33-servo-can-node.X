@@ -66,7 +66,7 @@
 //
 #pragma config WDTPOST = PS32    // Select WDT postscaler = 32.
 #pragma config WDTPRE  = PR32    // Select SDT prescaler = 32.
-#pragma config FWDTEN  = ON      // Enable WDT operation.
+#pragma config FWDTEN  = OFF     // Disable WDT operation. WDT enabled in software.
 #pragma config WINDIS  = OFF     // Operate WDT in Non-Window Mode.
 #pragma config WDTWIN  = WIN25   // N/A - b/c of 'WINDIS' setting.
 
@@ -123,8 +123,16 @@ void HwInit( void )
 
 void HwTMREnable ( void )
 {
-    // Enable timer 1
+    // Enable timer 1.
     T1CONbits.TON = 1;
+}
+
+void HwTMRDisable ( void )
+{
+    // Disable timer 1.
+    //
+    // Note: The timer counter value is cleared when disabling operation.
+    T1CONbits.TON = 0;
 }
 
 // *****************************************************************************
@@ -138,6 +146,9 @@ void HwTMREnable ( void )
 ////////////////////////////////////////////////////////////////////////////////
 static void HwOSCInit( void )
 {
+// QUESTION: OSCILLATOR SFRs ARE NOT RESET ON A WARM-RESET (E.G. WDT).  DOES INITIALIZATION NEED
+// TO BE TREATED SPECIALLY FOR A WARM-RESET?  IF NOT, INCLUDE COMMENTING FOR WHY THIS IS NOT THE CASE.
+    
     // Initialize the oscillator to operate the CPU clock at 40MHz
     // (i.e. 20 MIPS).
     // 
@@ -232,8 +243,8 @@ static void HwTMR1Init( void )
     //          = ( 20Mhz / 8        ) / ( 24999 + 1 )
     //          = 100Hz
     //
-    // Note: timer configured for continuous operation in idle mode.  Idle
-    // mode is not performed by the CPU; therefore, this setting is purely 
+    // Note: timer configured (TSIDL) for continuous operation in idle mode.
+    // Idle mode is not performed by the CPU; therefore, this setting is purely 
     // for robustness.
     //
     T1CONbits.TON   = 0;        // Disable Timer.

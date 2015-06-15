@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////////////////////
 ///
 /// @file   $FILE$
@@ -15,11 +14,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <math.h>
 
 // *****************************************************************************
 // ************************** User Include Files *******************************
 // *****************************************************************************
-#include "wdt.h"
 
 // *****************************************************************************
 // ************************** Defines ******************************************
@@ -36,35 +35,34 @@
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
 // *****************************************************************************
+static long double UtilPow( uint16_t var, uint8_t pow );
 
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
-void WDTService ( void )
+int16_t UtilPolyMul( uint16_t var, int32_t coeff[], uint8_t coeff_len )
 {
-    // Clear the watchdog timer values.
-    //
-    // Note: Hardware specific function (see 'xc.h') defined for clearing
-    // the watchdog timer values.
-    ClrWdt();
-}
-
-void WDTEnable ( void )
-{
-    // Enable watchdog timer operation.
-    //
-    // Note: enabling of the watchdog timer causes a reset of the counter
-    // value.
-    //    
-    RCONbits.SWDTEN = 1;
-}
-
-void WDTDisable ( void )
-{
-    // Disable watchdog timer operation.
-    RCONbits.SWDTEN = 0;    
+    long double value;
+    uint8_t coeff_idx;
+    
+    for ( coeff_idx  = 0;
+          coeff_idx <= coeff_len;
+          coeff_idx++ )
+    {
+        value = UtilPow( var, coeff_idx ) * coeff[ coeff_idx ];
+    }
+    
+    return ( (int16_t) value );
 }
 
 // *****************************************************************************
 // ************************** Static Functions *********************************
 // *****************************************************************************
+static long double UtilPow( uint16_t var, uint8_t pow )
+{
+    long double result;
+    
+    result = powl( (long double) var, (long double) pow );
+    
+    return result;
+}

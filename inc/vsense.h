@@ -7,13 +7,9 @@
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef HW_H_
-#define	HW_H_
+#ifndef VSENSE_H_
+#define	VSENSE_H_
 
+void VsenseService( void );
 
-void HwInit( void );
-void HwTMREnable ( void );
-void HwTMRDisable ( void );
-void HwWDTService ( void );
-
-#endif	// HW_H_
+#endif	// VSENSE_H_

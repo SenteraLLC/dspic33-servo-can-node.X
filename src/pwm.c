@@ -42,28 +42,56 @@
 // *****************************************************************************
 void PWMInit ( void )
 {
-    PTCONbits.PTEN = 0; // Disable the PWM module.
+    PTCONbits.PTEN = 0; // Disable the PWM module.  Should already be disabled out of reset; setting is included for robustness.
+    
+    PTCONbits.PTSIDL    = 0;    // N/A, b/c CPU idle mode not used.
+    PTCONbits.SEIEN     = 0;    // Special event interrupt is disabled.
+    PTCONbits.EIPU      = 0;    // N/A, b/c ITB = 1.
+    PTCONbits.SYNCPOL   = 0;    // N/A, External synchronization not used.
+    PTCONbits.SYNCOEN   = 0;    // SYNCO output is disabled.
+    PTCONbits.SYNCEN    = 0;    // External synchronization of time base disabled.
+    PTCONbits.SYNCSRC   = 0;    // N/A, b/c external synchronization not used.
+    PTCONbits.SEVTPS    = 0;    // N/A, b/c special event trigger not used.
     
     // Fosc = 40MHz
     // Fpwm = 50Hz
     //
-    // Fcnt := PWM counter frequency (i.e. the resolution of the PWM).
+    // Fcnt := PWM counter frequency (i.e. resolution of the PWM).
     // 
     // Fcnt = Fosc  / PCLKDIV
-    //      = 40MHz / 20
-    //      = 2MHz
+    //      = 40MHz / 16
+    //      = 2.5MHz
     //
-    // PTPER = Fcnt / Fpwm
-    //       = 2MHz / 50Hz
-    //       = 40000
+    // PHASE3 = Fcnt   / Fpwm
+    //        = 2.5MHz / 50Hz
+    //        = 50000
     //
+    // PDC3 = PHASE3 * Fpwm * 1.5ms
+    //      = 50000  * 50Hz * 1.5ms
+    //      = 3750
     //
+    // Note: A PWM prescaler is chosen which gives the greatest PWM resolution
+    // without overflowing the 16-bit period selection register 'PHASE3'.
     //
+    // Note: An initial PWM duty cycle is selected for the neutral (i.e. 1.5ms)
+    // position.
     //
+    PTCON2bits.PCLKDIV  = 0b100;    // Select the PWM perscaler (0b100 = 16 div).
+    PHASE3              = 50000;    // Select the PWM period.
+    PDC3                = 3750;     // Select the PWM duty cycle.
     
+    CHOPbits.CHPCLKEN = 0; // Chop clock generator is disabled.
     
-    PTCON2bits.PCLKDIV = 20; // Set PWM prescaler
-    
+    PWMCON3bits.FLTIEN  = 0;    // Fault interrupts disabled.
+    PWMCON3bits.CLIEN   = 0;    // Current-limit interrupt disabled.
+    PWMCON3bits.TRGIEN  = 0;    // Trigger interrupt disabled.
+    PWMCON3bits.ITB     = 1;    // Select independent time base mode; PWM3 period set with register 'PHASE3'.
+    PWMCON3bits.MDCS    = 0;    // Select independent duty cycle; PWM3 duty cycle set with register 'PDC3'.
+    PWMCON3bits.DTC     = 0b10; // Dead time function is disabled.
+    PWMCON3bits.DTCP    = 0;    // N/A, b/c DTC = 0b10.
+    PWMCON3bits.CAM     = 0;    // Edge-aligned mode is enabled (i.e. not center-aligned mode).
+    PWMCON3bits.XPRES   = 0;    // External pins do not affect PWM3 time base.
+    PWMCON3bits.IUE     = 0;    // Updates to the period (PHASE3) and duty cycle (PDC3) registers are synchronized to the PMW3 period boundary.
     
     // PWM3 I/O Control Register
     // 
@@ -77,7 +105,7 @@ void PWMInit ( void )
     //  bits  7- 6: OVRDAT = 00 - N/A, b/c OVRENL = 0.
     //  bits  5- 4: FLTDAT = 00 - N/A, b/c FLTMOD = 0.
     //  bits  3- 2: CLDAT  = 00 - N/A, b/c CLMOD = 0.
-    //  bits     1: SWAP   =  0 - No swap, pints PWM3H/L mapped to respective pins.
+    //  bits     1: SWAP   =  0 - No swap, pins PWM3H/L mapped to respective pins.
     //  bits     0: OSYNC  =  0 - N/A, b/c OVRENL = 0.
     //
     // Note: modification of the IOCON3 register is write protected.  A unlock
@@ -90,8 +118,33 @@ void PWMInit ( void )
     PWMKEY = 0x1234;
     IOCON3 = 0x4400;
     
+    AUXCON3bits.CHOPHEN = 0; // PWM3H chopping function is disabled.
+    AUXCON3bits.CHOPLEN = 0; // PWM3L chopping function is disabled.
 }
 
+void PWMEnable ( void )
+{
+    // Enable the PWM module.
+    //
+    // Note: Independent function for enabling of PWM modules allows for
+    // synchronization with control-flow processing.
+    //
+    PTCONbits.PTEN = 1;
+}
+
+void PWMDutySet ( uint16_t pwm_duty )
+{
+    // Update the hardware register setting for the PWM duty cycle.
+    //
+    // Note: PWM hardware configuration selected for 2.5MHz (0.4us) resolution.
+    // Therefore, input parameter (1us LSB) must be scaled by 2.5 for
+    // interfacing with hardware configuration.
+    //
+    // Note: Immediate vs. period-synchronized updating selected in
+    // register bit 'PWMCON3.IUE'.
+    //
+    PDC3 = ( pwm_duty * 5U ) / 2U;
+}
 
 // *****************************************************************************
 // ************************** Static Functions *********************************
