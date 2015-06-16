@@ -45,22 +45,21 @@
 void NVMInit ( void )
 {
     NVMCONbits.WREN    = 1;     // Enabled program/erase operations.
-    NVMCONbits.NVMSIDL = 0;     // N/A since idle mode not entered.  Set to continue Flash operations when in idle mode for robustness.
-    NVMCONbits.RPDF    = 1;     // Data is stored in RAM in an uncompressed format.
+    NVMCONbits.NVMSIDL = 0;     // N/A, since idle mode not entered.  Set to continue Flash operations when in idle mode for robustness.
+    NVMCONbits.RPDF    = 0;     // Data is stored in RAM in an uncompressed format.
 }
 
-bool NVMErasePage ( uint16_t erase_addr )
+bool NVMErasePage ( uint16_t table_page, 
+                    uint16_t table_offset )
 {
     bool nvm_error = false;
     
-    NVMCONbits.NVMOP = 0b0011;  // Select a Memory page erase operation.
-    
     // Load the address of the erased page.
-    //
-    // Default memory model is used (i.e. 'small' memory model) - therefore,
-    // data is accessed using 16-bit pointer.
-    NVMADRU = 0;
-    NVMADR  = erase_addr;
+    NVMADRU = table_page;
+    NVMADR  = table_offset;
+    
+    // Select a Memory page erase operation.
+    NVMCONbits.NVMOP = 0b0011;
     
     // Disable control flow execution.  
     // - interrupts
@@ -113,7 +112,9 @@ bool NVMErasePage ( uint16_t erase_addr )
     return nvm_error;
 }
 
-bool NVMProgramPage ( void* src_data, uint16_t dest_addr )
+bool NVMProgramPage ( void*    src_data,
+                      uint16_t table_page, 
+                      uint16_t table_offset )
 {
     uint16_t program_row_idx;
     bool     nvm_error = false;
@@ -121,9 +122,6 @@ bool NVMProgramPage ( void* src_data, uint16_t dest_addr )
     // Typecast src_data pointer to unsigned 16-bit integer type for
     // arithmetic processing.
     src_data = (uint16_t*) src_data;
-    
-    // Select a Memory row program operation.
-    NVMCONbits.NVMOP = 0b0010;  
     
     // Increment through the Program Page (1024 words), one row 
     // (128 words) at a time.
@@ -136,14 +134,14 @@ bool NVMProgramPage ( void* src_data, uint16_t dest_addr )
         // Note: Default memory model is used (i.e. 'small' memory model); 
         // therefore, data is accessed using 16-bit pointer.
         NVMSRCADRH = 0;
-        NVMSRCADRL = (uint16_t) &src_data;
+        NVMSRCADRL = (uint16_t) src_data;
 
         // Load the NVM destination address.
-        //
-        // Default memory model is used (i.e. 'small' memory model) - therefore,
-        // data is accessed using 16-bit pointer.
-        NVMADRU = 0;
-        NVMADR  = dest_addr;
+        NVMADRU = table_page;
+        NVMADR  = table_offset;
+        
+        // Select a Memory row program operation.
+        NVMCONbits.NVMOP = 0b0010;  
         
         // Disable control flow execution.  
         // - interrupts
@@ -201,25 +199,6 @@ bool NVMProgramPage ( void* src_data, uint16_t dest_addr )
     return nvm_error;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 // *****************************************************************************
 // ************************** Static Functions *********************************
 // *****************************************************************************
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief 
-/// @param 
-/// @return
-////////////////////////////////////////////////////////////////////////////////

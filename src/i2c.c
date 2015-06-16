@@ -132,6 +132,7 @@ static void I2CTxSeq ( uint8_t tx_data )
     // ACK/NAK) since TRSTAT is set high after SDA is updated with the first
     // data byte.  That is, a delay exists between updating the transmit
     // register (I2C1TRN) and status register 'TRSTAT' being '1'.
+    //
     while( I2C1STATbits.TBF == 1 );
 
     // Wait for reception of ACK/NAK.

@@ -32,11 +32,11 @@
 // *****************************************************************************
 // ************************** File-Scope Variable Definitions ******************
 // *****************************************************************************
-static const uint8_t  node_type; 
-static const uint8_t  rev_ver;
-static const uint8_t  min_ver;
-static const uint8_t  maj_ver;
-static const uint32_t serial_num;
+static const uint8_t  node_type     = 1;    // Identified as 'Servo' Node.
+static const uint8_t  rev_ver       = 0;
+static const uint8_t  min_ver       = 0;
+static const uint8_t  maj_ver       = 0;
+static const uint32_t serial_num    = 0;    // Updated during manufacturing.
 
 // *****************************************************************************
 // ************************** Function Prototypes ******************************

@@ -35,12 +35,12 @@
       <itemPath>src/rst.c</itemPath>
       <itemPath>src/pwm.c</itemPath>
       <itemPath>src/can.c</itemPath>
-      <itemPath>src/cor.c</itemPath>
       <itemPath>src/cfg.c</itemPath>
       <itemPath>src/nvm.c</itemPath>
       <itemPath>src/ver.c</itemPath>
       <itemPath>src/vsense.c</itemPath>
       <itemPath>src/util.c</itemPath>
+      <itemPath>src/servo.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -88,9 +88,9 @@
         <makeCustomizationNormalizeHexFile>false</makeCustomizationNormalizeHexFile>
       </makeCustomizationType>
       <C30>
-        <property key="code-model" value="default"/>
-        <property key="const-model" value="default"/>
-        <property key="data-model" value="default"/>
+        <property key="code-model" value="small-code"/>
+        <property key="const-model" value="const-in-code"/>
+        <property key="data-model" value="small-data"/>
         <property key="enable-all-warnings" value="true"/>
         <property key="enable-ansi-std" value="false"/>
         <property key="enable-ansi-warnings" value="false"/>
@@ -122,7 +122,7 @@
         <property key="post-instruction-scheduling" value="default"/>
         <property key="pre-instruction-scheduling" value="default"/>
         <property key="preprocessor-macros" value=""/>
-        <property key="scalar-model" value="default"/>
+        <property key="scalar-model" value="small-scalar"/>
         <property key="use-cci" value="true"/>
         <property key="use-iar" value="false"/>
       </C30>
@@ -305,7 +305,6 @@
         <property key="UART 1" value="true"/>
         <property key="UART 2" value="true"/>
         <property key="debugoptions.useswbreakpoints" value="true"/>
-        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="hwtoolclock.instructionspeed" value="20"/>
         <property key="hwtoolclock.units" value="mips"/>

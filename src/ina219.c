@@ -29,7 +29,8 @@
 //
 // Note: INA219 address lines A1 and A0 are electrically grounded.  This causes
 // the INA219 slave address to be 0b100_0000.
-#define INA219_SADDR  0x70U
+//
+#define INA219_SADDR  0x40U
 
 #define INA219_REG_CFG          0x00     // Configuration Register Address
 #define INA219_REG_BUS_VOLT     0x02     // Bus Voltage Register Address
@@ -137,9 +138,15 @@ void INA219Service ( void )
     // Read the Bus Voltage (Vin-) value.
     I2CRead( INA219_SADDR, (uint8_t*) &volt_reg_val, sizeof ( volt_reg_val ) );
     
-    // Remove Bus Voltage offset - within the INA219 register, the value
+    // 1. Remove Bus Voltage offset - within the INA219 register, the value
     // is positioned at bits 14-3.
+    //
+    // 2. Scale the Bus Voltage to an LSb of 1mV.  With the peripheral's
+    // configuration (see initialization function), the values scaling is 
+    // an LSb of 4mV.  Therefore, the value need to be multiplied by 4.
+    //
     ina219_volt = volt_reg_val >> 3;
+    ina219_volt = ina219_volt  << 2;
     
     // Select the Current register for the subsequent read operation.
     I2CWrite( INA219_SADDR, &amp_sel_data[ 0 ], sizeof( amp_sel_data ) );

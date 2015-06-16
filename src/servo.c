@@ -79,7 +79,7 @@ void ServoService ( void )
         CfgPWMCoeffGet( &servo_coeff[ 0 ] );
         
         // Perform correction of position commanded value.
-        servo_act_pwm = UtilPolyMul( servo_cmd_pos, &servo_coeff[ 0 ], CFG_PWM_COEFF_LEN );
+        // servo_act_pwm = UtilPolyMul( servo_cmd_pos, &servo_coeff[ 0 ], CFG_PWM_COEFF_LEN );  COMMENTED OUT FOR DEBUGGING
     }
     else
     {

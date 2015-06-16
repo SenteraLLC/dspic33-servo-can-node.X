@@ -39,6 +39,10 @@
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
 // *****************************************************************************
+
+// *****************************************************************************
+// ************************** Global Functions *********************************
+// *****************************************************************************
 void VsenseService( void )
 {
     CAN_TX_VSENSE_DATA_U vsense_msg;
@@ -60,8 +64,8 @@ void VsenseService( void )
     CfgVsense2CoeffGet( &vsense2_coeff[ 0 ] );
     
     // Perform correction of vsense signals.
-    vsense1_cor = UtilPolyMul( vsense1_raw, &vsense1_coeff[ 0 ], CFG_VSENSE1_COEFF_LEN );
-    vsense2_cor = UtilPolyMul( vsense2_raw, &vsense2_coeff[ 0 ], CFG_VSENSE2_COEFF_LEN );
+    // vsense1_cor = UtilPolyMul( vsense1_raw, &vsense1_coeff[ 0 ], CFG_VSENSE1_COEFF_LEN );        COMMENTED OUT FOR DEBUGGING
+    // vsense2_cor = UtilPolyMul( vsense2_raw, &vsense2_coeff[ 0 ], CFG_VSENSE2_COEFF_LEN );        COMMENTED OUT FOR DEBUGGING
     
     // Construct the vsense CAN message.
     vsense_msg.vsense1_raw = vsense1_raw;
@@ -72,10 +76,6 @@ void VsenseService( void )
     // Send the CAN message.
     CANTxSet ( CAN_TX_MSG_VSENSE_DATA, vsense_msg.data_u16 );
 }
-
-// *****************************************************************************
-// ************************** Global Functions *********************************
-// *****************************************************************************
 
 // *****************************************************************************
 // ************************** Static Functions *********************************

@@ -19,6 +19,7 @@
 // *****************************************************************************
 // ************************** User Include Files *******************************
 // *****************************************************************************
+#include "hw.h"
 
 // *****************************************************************************
 // ************************** Defines ******************************************
@@ -53,6 +54,33 @@ int16_t UtilPolyMul( uint16_t var, int32_t coeff[], uint8_t coeff_len )
     }
     
     return ( (int16_t) value );
+}
+
+// Note: internal scaling by 10 is performed; input parameter 'ms_delay'
+// should no exceed ~6000.
+void UtilDelay( uint16_t ms_delay )
+{
+    uint16_t start_time;
+    uint16_t psnt_time;
+    uint16_t p1ms_delay;
+    
+    // Scale delay time to resolution of Timer1 (i.e. 1ms -> 0.1ms).
+    p1ms_delay = ms_delay * 10;
+    
+    // Initialize timers for identifying delay time.
+    start_time = HwTMRp1msGet();
+    psnt_time  = start_time;
+    
+    // Wait for the delay time to elapse before exiting the function.
+    //
+    // Note: Condition is 'less than or equal to' to guarantee delay time will
+    // elapse.  For example, with input parameter 'ms_delay' = 5, the time
+    // elapsed will be 5.0-5.1ms.
+    //
+    while ( psnt_time - start_time <= p1ms_delay )
+    {
+        psnt_time = HwTMRp1msGet();
+    }
 }
 
 // *****************************************************************************

@@ -22,6 +22,7 @@
 #include "cfg.h"
 #include "can.h"
 #include "nvm.h"
+#include "util.h"
 
 // *****************************************************************************
 // ************************** Defines ******************************************
@@ -29,8 +30,7 @@
 
 // The Program Memory page is 2048 bytes (i.e. 512 program double-words) in
 // length.  The upper word of the 512 program double-words is not used for
-// constant data storage (see __pack_upper_byte compiler option), so
-// (for constant data) a Program Memory page is 512 words in length
+// constant data storage (see __pack_upper_byte compiler option).
 //
 // The structure is defined as the size for one page (i.e. padded 
 // with 'reserved' bytes) so that an erase operation will not inadvertently
@@ -43,7 +43,7 @@ typedef struct
     int32_t  vsense1_coeff[ CFG_VSENSE1_COEFF_LEN ];    // word 13-24
     int32_t  vsense2_coeff[ CFG_VSENSE2_COEFF_LEN ];    // word 25-36
     
-    uint16_t reserved[ 475 ];                           // word 37-511
+    uint16_t reserved[ 475 ];                           // word 37-512          // 987
     
 } CFG_DATA_S;
 
@@ -51,12 +51,19 @@ typedef struct
 // ************************** Global Variable Definitions **********************
 // *****************************************************************************
 
-// Align the configuration data memory allocation to a Program Memory page.
-static const CFG_DATA_S __align( 2048 ) cfg_data;
-
 // *****************************************************************************
 // ************************** File-Scope Variable Definitions ******************
 // *****************************************************************************
+
+// Align the configuration data memory allocation to a Program Memory page.
+static const CFG_DATA_S __align( 2048 ) cfg_data =
+{
+    0x7F,       // Initialize node_id to maximum 7-bit value.
+    { 0x76543210 },                                                                      // DEGUG CODE TEMP VALUE
+    { 0xFEDCBA98 },                                                                      // DEGUG CODE TEMP VALUE
+    { 0x11223344 },                                                                      // DEGUG CODE TEMP VALUE
+    { 0x5566 },                                                                      // DEGUG CODE TEMP VALUE
+};
 
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
@@ -133,6 +140,8 @@ static void CfgWrite ( void )
     CAN_TX_WRITE_REQ_U  write_req_payload;
     CAN_TX_WRITE_RESP_U write_resp_payload;
             
+    bool node_id_update = false;
+    
     bool payload_valid;
     bool fault_status;
     
@@ -149,6 +158,7 @@ static void CfgWrite ( void )
         {
             case 0:
                 cfg_data_cpy.node_id = write_req_payload.cfg_val_u8;
+                node_id_update =  true;
                 break;
                 
             case 1:
@@ -183,20 +193,16 @@ static void CfgWrite ( void )
         }
         
         // Erase the NVM page.
-        //
-        // Note: Page erasing takes approximately 20ms.  During this time the
-        // CPU is stalled.
-        //
-        fault_status = NVMErasePage( ((uint16_t)&cfg_data) );
+        fault_status = NVMErasePage( __builtin_tblpage(   &cfg_data ), 
+                                     __builtin_tbloffset( &cfg_data ) );
         
         // Erase operation was successful ?
         if( fault_status == false )
         {
             // Program the updated RAM copy to the NVM page.
-            //
-            // Note: Page programming tables approximately 6ms.  During this
-            // time the CPU is stalled.
-            fault_status = NVMProgramPage( &cfg_data_cpy, ((uint16_t)&cfg_data) );
+            fault_status = NVMProgramPage( &cfg_data_cpy, 
+                                          __builtin_tblpage(   &cfg_data ), 
+                                          __builtin_tbloffset( &cfg_data )  );
         }
         
         // Construct the Write Response message
@@ -205,6 +211,18 @@ static void CfgWrite ( void )
         
         // Send the Write Response message.
         CANTxSet ( CAN_TX_MSG_CFG_WRITE_RESP, write_resp_payload.data_u16 );
+        
+        // Node ID was updated ?
+        if( node_id_update == true )
+        {
+            // Wait for 5ms so the Write Response CAN message has time
+            // to be transmitted.
+            UtilDelay( 5 );
+            
+            // Perform a software reset so that the updated Node ID can
+            // be used for CAN message filtering.
+            __asm__ volatile ("reset");
+        }
     }
 }
 

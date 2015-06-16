@@ -16,4 +16,8 @@ void HwTMREnable ( void );
 void HwTMRDisable ( void );
 void HwWDTService ( void );
 
+void HwTMR1Service ( void );
+void HwTMR2Service ( void );
+uint16_t HwTMRp1msGet ( void );
+
 #endif	// HW_H_

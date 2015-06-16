@@ -22,13 +22,16 @@ void NVMInit ( void );
 /// @param 
 /// @return
 ////////////////////////////////////////////////////////////////////////////////
-bool NVMErasePage ( uint16_t erase_addr );
+bool NVMErasePage ( uint16_t table_page, 
+                    uint16_t table_offset );
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief 
 /// @param 
 /// @return
 ////////////////////////////////////////////////////////////////////////////////
-bool NVMProgramPage ( void* src_data, uint16_t dest_addr );
+bool NVMProgramPage ( void*    src_data,
+                      uint16_t table_page, 
+                      uint16_t table_offset );
 
 #endif	// NVM_H_

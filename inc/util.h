@@ -12,4 +12,6 @@
 
 int16_t UtilPolyMul( uint16_t var, int32_t coeff[], uint8_t coeff_len );
 
+void UtilDelay( uint16_t ms_time );
+
 #endif	// UTIL_H_

@@ -559,7 +559,7 @@ static void CANTxBuildHeader ( CAN_TX_MSG_TYPE_E tx_msg_type, uint16_t msg_buf[ 
     
     
     //
-    // START OF OPERATIONAL CODE -----------------------------------------------
+    // START OF OPERATIONAL CODE AND LOCAL VARIABLE DEFINITIONS ----------------
     //
     
     CAN_ID_U can_id;
@@ -632,59 +632,3 @@ static void CANTxBuildHeader ( CAN_TX_MSG_TYPE_E tx_msg_type, uint16_t msg_buf[ 
     msg_buf[ 1 ] = tx_hw_header.data_u16[ 1 ];  
     msg_buf[ 2 ] = tx_hw_header.data_u16[ 2 ];
 }
-
-
-
-//  TEMPORARY VARIABLE DEFINITION - DELETE WITH INTEGRATION TESTING PROCESS.
-//
-//    // Defined messages' header content.
-//    static const CAN_ID_U tx_can_id[ CAN_TX_MSG_NUM_OF ] =
-//    {
-//        // CAN_TX_MSG_SERVO_STATUS
-//        {
-//            20,         // data_type_id
-//            0b10,       // transfer_type - Message broadcast
-//            0,          // dest_node_id - N/A, broadcast message (set to 0)
-//            8,          // data_len 
-//        },
-//        
-//        // CAN_TX_MSG_VSENSE_DATA
-//        {
-//            21,         // data_type_id
-//            0b10,       // transfer_type - Message broadcast
-//            0,          // dest_node_id - N/A, broadcast message (set to 0)
-//            8,          // data_len 
-//        },
-//        
-//        // CAN_TX_MSG_NODE_STATUS
-//        {
-//            770,        // data_type_id
-//            0b10,       // transfer_type - Message broadcast
-//            0,          // dest_node_id - N/A, broadcast message (set to 0)
-//            4,          // data_len 
-//        },
-//        
-//        // CAN_TX_MSG_NODE_VER
-//        {
-//            771,        // data_type_id
-//            0b10,       // transfer_type - Message broadcast
-//            0,          // dest_node_id - N/A, broadcast message (set to 0)
-//            8,          // data_len 
-//        },
-//        
-//        // CAN_TX_MSG_CFG_WRITE_RESP
-//        {
-//            800,        // data_type_id
-//            0b00,       // transfer_type - Service Response
-//            0,          // dest_node_id - send to FMU (ID = 0)
-//            6,          // data_len 
-//        },
-//        
-//        // CAN_TX_MSG_CFG_READ_RESP
-//        {
-//            801,        // data_type_id
-//            0b00,       // transfer_type - Service Response
-//            0,          // dest_node_id - send to FMU (ID = 0)
-//            0,          // data_len - Variable, depends on value read.
-//        },
-//    };

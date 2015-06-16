@@ -42,7 +42,12 @@
 // *****************************************************************************
 void PWMInit ( void )
 {
-    PTCONbits.PTEN = 0; // Disable the PWM module.  Should already be disabled out of reset; setting is included for robustness.
+    // Disable the PWM module.
+    //
+    // Note: Should already be disabled out of reset; setting is included for
+    // robustness.
+    //
+    PTCONbits.PTEN = 0;
     
     PTCONbits.PTSIDL    = 0;    // N/A, b/c CPU idle mode not used.
     PTCONbits.SEIEN     = 0;    // Special event interrupt is disabled.

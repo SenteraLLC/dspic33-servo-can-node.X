@@ -73,19 +73,27 @@ int main ( void )
 
 void __interrupt( no_auto_psv ) _T1Interrupt ( void )
 {   
-    // QUESTION: NEED TO CLEAR THE TIMER1 INTERRUPT HARDWARE FLAG
-    // DURING THE INTERRUPT ?
+    // Service the timer interrupt.
+    HwTMR1Service();
     
+    // INPUT - Aquire input signals for software cycle execution.
     ADCService();
     INA219Service();
     
+    // PROCESS & OUTPUT - Perform processing and output signals for software
+    // cycle execution.
     WDTService();
     VsenseService();
     ServoService();
     CfgService();
     RSTService();
     VerService();
-    
+}
+
+void __interrupt( no_auto_psv ) _T2Interrupt ( void )
+{
+    // Service the timer interrupt.
+    HwTMR2Service();
 }
 
 void __interrupt( no_auto_psv ) _DefaultInterrupt ( void )

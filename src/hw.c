@@ -104,9 +104,22 @@
 // *****************************************************************************
 static void HwOSCInit  ( void );
 static void HwI2C1Init ( void );
-static void HwCAN1Init ( void );
+static void HwTMR2Init ( void );
 static void HwTMR1Init ( void );
 static void HwIOInit   ( void );
+
+// *****************************************************************************
+// ************************** Global Variable Definitions **********************
+// *****************************************************************************
+
+// *****************************************************************************
+// ************************** File-Scope Variable Definitions ******************
+// *****************************************************************************
+
+// Note: multi-threaded data.
+//
+// Note: 16-bit timer with roll-over
+static volatile uint16_t hwtmr_p1ms_cnt = 0;
 
 // *****************************************************************************
 // ************************** Global Functions *********************************
@@ -116,23 +129,45 @@ void HwInit( void )
 {
     HwOSCInit();
     HwTMR1Init();
+    HwTMR2Init();
     HwI2C1Init();
-    HwCAN1Init();
     HwIOInit();
 }
 
 void HwTMREnable ( void )
 {
-    // Enable timer 1.
+    // Enable timer 1 and timer 2.
     T1CONbits.TON = 1;
+    T2CONbits.TON = 1;
 }
 
 void HwTMRDisable ( void )
 {
-    // Disable timer 1.
+    // Disable timer 1 and timer 2.
     //
     // Note: The timer counter value is cleared when disabling operation.
     T1CONbits.TON = 0;
+    T2CONbits.TON = 0;
+}
+
+void HwTMR1Service ( void )
+{
+    // Clear the hardware interrupt flag.
+    IFS0bits.T1IF = 0; 
+}
+
+void HwTMR2Service ( void )
+{
+    // Clear the hardware interrupt flag.
+    IFS0bits.T2IF = 0; 
+    
+    // Increment the counter (16-bit roll-over counter).
+    hwtmr_p1ms_cnt++;
+}
+
+uint16_t HwTMRp1msGet ( void )
+{
+    return hwtmr_p1ms_cnt;
 }
 
 // *****************************************************************************
@@ -146,9 +181,6 @@ void HwTMRDisable ( void )
 ////////////////////////////////////////////////////////////////////////////////
 static void HwOSCInit( void )
 {
-// QUESTION: OSCILLATOR SFRs ARE NOT RESET ON A WARM-RESET (E.G. WDT).  DOES INITIALIZATION NEED
-// TO BE TREATED SPECIALLY FOR A WARM-RESET?  IF NOT, INCLUDE COMMENTING FOR WHY THIS IS NOT THE CASE.
-    
     // Initialize the oscillator to operate the CPU clock at 40MHz
     // (i.e. 20 MIPS).
     // 
@@ -165,7 +197,13 @@ static void HwOSCInit( void )
     // be operated in a singe mode (i.e. External Clock w/ PLL).  The PLL is
     // updated to drive to the correct value before checking that the PLL is
     // locked.
-    
+    //
+    // Note: On warm-reset (i.e. not POR or BOR) the oscillator retains
+    // its SFR settings.  Setting of clock registers are done independent
+    // of the reset state to make less complex - i.e. on a warm-reset the
+    // clock will be set to the same value it already is (not PLL lock time
+    // should be needed).
+    //
     CLKDIVbits.PLLPRE  =  0;         // PLL input divided by 2.      (N1)
     CLKDIVbits.PLLPOST =  1;         // PLL output divided by 4.     (N2)
     PLLFBDbits.PLLDIV  = 30;         // PLL feedback divisor is 32.  (M)
@@ -173,6 +211,7 @@ static void HwOSCInit( void )
     // Wait for the PLL to lock.
     //
     // Note: The PLL lock time (Tlock) is a maximum of 3.1ms (see datasheet).
+    //
     while( OSCCONbits.LOCK == 0 );   
 }
 
@@ -193,33 +232,16 @@ static void HwI2C1Init( void )
     // Note: when the I2C1 module is enabled the state and direction pins
     // SCL1 & SDA1 are overwritten; therefore, no pin I/O configuration
     // (e.g. register ODCx) is needed.
-    
-
-    
-    // I2C1CON1bits.I2CEN = 0;     // Disable I2C1
+    //
+    // Note: Disabling of the I2C is performed before modifying register.  Out
+    // of reset the I2C should be disabled, so disabled is performed purely
+    // for robustness.
+    //
+    I2C1CON1bits.I2CEN = 0;     // Disable I2C1
    
-//    ODCBbits.ODCB5 = 1;         // SDA1 = RB5 (open drain)
-//    ODCBbits.ODCB6 = 1;         // SCL1 = RB6 (open drain)
-//    
-//    I2C1BRG = 97;               // 100 kHz clock.
-//
-//    I2C1CON1bits.I2CEN = 1;     // Enable I2C1.
-    
-    I2C1BRG = 98;               // 100 kHz clock.
+    I2C1BRG = 98;               // Set 100 kHz clock.
 
     I2C1CON1bits.I2CEN = 1;     // Enable I2C1.
-    
-    return;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// @brief  Initialize CAN 1 configuration.
-/// @param 
-/// @return
-////////////////////////////////////////////////////////////////////////////////
-static void HwCAN1Init( void )
-{
-    
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -261,6 +283,47 @@ static void HwTMR1Init( void )
     IPC0bits.T1IP   = 1;        // Select Timer 1 interrupt priority level.
     IFS0bits.T1IF   = 0;        // Clear Timer 1 interrupt flag.
     IEC0bits.T1IE   = 1;        // Enable Time 1 interrupt.
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief  Initialize Timer 1 hardware configuration.
+/// @param  None.
+/// @return None.
+////////////////////////////////////////////////////////////////////////////////
+static void HwTMR2Init( void )
+{
+    // Timer 2 is operated in 'Timer Mode' - the free-running timer is
+    // configured to provide a 0.1ms counter.
+    //
+    // Timer 2 is fed by the instruction/peripheral clock (Fp), see
+    // datasheet p. 123.
+    // 
+    // Fp       = Fosc / 2                              
+    //          = 20MHz
+    //
+    // Ft1int   = ( Fp    / Prescale ) / ( PR1 + 1 )
+    //          = ( 20Mhz / 8        ) / ( 249 + 1 )
+    //          = 10KHz
+    //
+    // Note: timer configured (TSIDL) for continuous operation in idle mode.
+    // Idle mode is not performed by the CPU; therefore, this setting is purely 
+    // for robustness.
+    //
+    T2CONbits.TON   = 0;        // Disable Timer.
+    T2CONbits.TCS   = 0;        // Select internal instruction cycle clock.
+    T2CONbits.TGATE = 0;        // Select Timer (i.e. not Gated) mode.
+    T2CONbits.T32   = 0;        // Select 16-bit timer.
+    
+    T2CONbits.TSIDL = 0;        // Select continuous operation in idle mode.
+    
+    T2CONbits.TCKPS = 0b01;     // Select prescale = 8.
+    
+    TMR2            = 0;        // Clear timer value register.
+    PR2             = 249;      // Set the period value.
+    
+    IPC1bits.T2IP   = 2;        // Select Timer 2 interrupt priority level.
+    IFS0bits.T2IF   = 0;        // Clear Timer 2 interrupt flag.
+    IEC0bits.T2IE   = 1;        // Enable Time 2 interrupt.
 }
 
 ////////////////////////////////////////////////////////////////////////////////
