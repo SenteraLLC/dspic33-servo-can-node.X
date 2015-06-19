@@ -72,7 +72,7 @@ void I2CWrite( uint8_t saddr, const uint8_t* data, uint8_t data_len )
 
 void I2CRead( uint8_t saddr, uint8_t* data, uint8_t data_len )
 {
-    uint8_t data_idx;
+    int16_t data_idx;
     
     // Perform a start sequence.
     I2CStartSeq();
@@ -82,12 +82,18 @@ void I2CRead( uint8_t saddr, uint8_t* data, uint8_t data_len )
     // Note: The slave address occupies bits 7-1 of the transmitted byte.  The
     // write/read command occupies bit 0 of the transmitted byte.  A read
     // operation is identified by setting bit 0 as '1'.
+    //
     I2CTxSeq( ( saddr << 1 ) | 0b1 );
     
     // Stored received data in the supplied buffer.
-    for ( data_idx = 0U;
-          data_idx < data_len;
-          data_idx++ )
+    //
+    // Note: Data transfer via I2C is MSB first and integer values are stored
+    // within memory in little-endian format.  Therefore, storing of I2C data
+    // needs to begin at the end of the supplied data array.
+    //
+    for ( data_idx  = data_len - 1;
+          data_idx >= 0;
+          data_idx-- )
     {
         data[ data_idx ] = I2CRxSeq();
     }

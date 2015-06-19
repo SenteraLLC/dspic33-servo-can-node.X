@@ -30,22 +30,27 @@
 
 // The Program Memory page is 2048 bytes (i.e. 512 program double-words) in
 // length.  The upper word of the 512 program double-words is not used for
-// constant data storage (see __pack_upper_byte compiler option).
+// constant data storage (i.e. __pack_upper_byte compiler option not used).
 //
 // The structure is defined as the size for one page (i.e. padded 
 // with 'reserved' bytes) so that an erase operation will not inadvertently
 // erase other program components.
 //
-typedef struct
+typedef union
 {
-    uint8_t  node_id;                                   // word  0      (note: padded)
-    int32_t  pwm_coeff[ CFG_PWM_COEFF_LEN ];            // word  1-12
-    int32_t  vsense1_coeff[ CFG_VSENSE1_COEFF_LEN ];    // word 13-24
-    int32_t  vsense2_coeff[ CFG_VSENSE2_COEFF_LEN ];    // word 25-36
+    struct
+    {
+        uint8_t  node_id;                                   // word  0      (note: padded)
+        int32_t  pwm_coeff[ CFG_PWM_COEFF_LEN ];            // word  1-12
+        int32_t  vsense1_coeff[ CFG_VSENSE1_COEFF_LEN ];    // word 13-24
+        int32_t  vsense2_coeff[ CFG_VSENSE2_COEFF_LEN ];    // word 25-36
+
+        uint16_t reserved[ 475 ];                           // word 37-512
+    }dstruct;
     
-    uint16_t reserved[ 475 ];                           // word 37-512          // 987
+    uint16_t data_u16[ 512 ];
     
-} CFG_DATA_S;
+} CFG_DATA_U;
 
 // *****************************************************************************
 // ************************** Global Variable Definitions **********************
@@ -56,13 +61,15 @@ typedef struct
 // *****************************************************************************
 
 // Align the configuration data memory allocation to a Program Memory page.
-static const CFG_DATA_S __align( 2048 ) cfg_data =
+static const CFG_DATA_U __align( 1024 ) cfg_data =
 {
-    0x7F,       // Initialize node_id to maximum 7-bit value.
-    { 0x76543210 },                                                                      // DEGUG CODE TEMP VALUE
-    { 0xFEDCBA98 },                                                                      // DEGUG CODE TEMP VALUE
-    { 0x11223344 },                                                                      // DEGUG CODE TEMP VALUE
-    { 0x5566 },                                                                      // DEGUG CODE TEMP VALUE
+    {
+        0x7F,       // Initialize node_id to maximum 7-bit value.
+        { 0x76543210 },                                                             // DEGUG CODE TEMP VALUE, SHOULD INITIALIZE TO ZERO ORDER POLYNOMIAL WITH CONSTANT VALUE OF 1.
+        { 0xFEDCBA98 },                                                             // DEGUG CODE TEMP VALUE, SHOULD INITIALIZE TO ZERO ORDER POLYNOMIAL WITH CONSTANT VALUE OF 1.
+        { 0x11223344 },                                                             // DEGUG CODE TEMP VALUE, SHOULD INITIALIZE TO ZERO ORDER POLYNOMIAL WITH CONSTANT VALUE OF 1.
+        { 0x5566 },                                                                 // DEGUG CODE TEMP VALUE, SHOULD INITIALIZE TO ZEROS.
+    }
 };
 
 // *****************************************************************************
@@ -85,7 +92,7 @@ void CfgService ( void )
 
 uint8_t CfgNodeIdGet ( void )
 {
-    return cfg_data.node_id;
+    return cfg_data.dstruct.node_id;
 }
 
 void CfgPWMCoeffGet ( int32_t pwm_coeff[ CFG_PWM_COEFF_LEN ] )
@@ -96,7 +103,7 @@ void CfgPWMCoeffGet ( int32_t pwm_coeff[ CFG_PWM_COEFF_LEN ] )
           coeff_idx < CFG_PWM_COEFF_LEN;
           coeff_idx++ )
     {
-        pwm_coeff[ coeff_idx ] = cfg_data.pwm_coeff[ coeff_idx ];
+        pwm_coeff[ coeff_idx ] = cfg_data.dstruct.pwm_coeff[ coeff_idx ];
     }
 }
 
@@ -108,7 +115,7 @@ void CfgVsense1CoeffGet ( int32_t vsense1_coeff[ CFG_VSENSE1_COEFF_LEN ] )
           coeff_idx < CFG_VSENSE1_COEFF_LEN;
           coeff_idx++ )
     {
-        vsense1_coeff[ coeff_idx ] = cfg_data.vsense1_coeff[ coeff_idx ];
+        vsense1_coeff[ coeff_idx ] = cfg_data.dstruct.vsense1_coeff[ coeff_idx ];
     }
 }
 
@@ -120,7 +127,7 @@ void CfgVsense2CoeffGet ( int32_t vsense2_coeff[ CFG_VSENSE2_COEFF_LEN ] )
           coeff_idx < CFG_VSENSE2_COEFF_LEN;
           coeff_idx++ )
     {
-        vsense2_coeff[ coeff_idx ] = cfg_data.vsense2_coeff[ coeff_idx ];
+        vsense2_coeff[ coeff_idx ] = cfg_data.dstruct.vsense2_coeff[ coeff_idx ];
     }
 }
 
@@ -135,7 +142,7 @@ void CfgVsense2CoeffGet ( int32_t vsense2_coeff[ CFG_VSENSE2_COEFF_LEN ] )
 ////////////////////////////////////////////////////////////////////////////////
 static void CfgWrite ( void )
 {
-    static CFG_DATA_S cfg_data_cpy;
+    static CFG_DATA_U cfg_data_cpy;
     
     CAN_TX_WRITE_REQ_U  write_req_payload;
     CAN_TX_WRITE_RESP_U write_resp_payload;
@@ -151,13 +158,14 @@ static void CfgWrite ( void )
     if( payload_valid == true )
     {
         // Copy the configuration data from NVM to RAM.
-        cfg_data_cpy = cfg_data;
+        cfg_data_cpy.dstruct = cfg_data.dstruct;
+        // cfg_data_cpy = cfg_data;
         
         // Update the selected fields in RAM with the new value.
         switch( write_req_payload.cfg_sel )
         {
             case 0:
-                cfg_data_cpy.node_id = write_req_payload.cfg_val_u8;
+                cfg_data_cpy.dstruct.node_id = write_req_payload.cfg_val_u8;
                 node_id_update =  true;
                 break;
                 
@@ -167,7 +175,7 @@ static void CfgWrite ( void )
             case 4:
             case 5:
             case 6:
-                cfg_data_cpy.pwm_coeff[ write_req_payload.cfg_sel - 1 ] = write_req_payload.cfg_val_i32;
+                cfg_data_cpy.dstruct.pwm_coeff[ write_req_payload.cfg_sel - 1 ] = write_req_payload.cfg_val_i32;
                 break;
             
             case 7:
@@ -176,7 +184,7 @@ static void CfgWrite ( void )
             case 10:
             case 11:
             case 12:
-                cfg_data_cpy.vsense1_coeff[ write_req_payload.cfg_sel - 7 ] = write_req_payload.cfg_val_i32;
+                cfg_data_cpy.dstruct.vsense1_coeff[ write_req_payload.cfg_sel - 7 ] = write_req_payload.cfg_val_i32;
                 break;
             
             case 13:
@@ -185,7 +193,7 @@ static void CfgWrite ( void )
             case 16:
             case 17:
             case 18:
-                cfg_data_cpy.vsense1_coeff[ write_req_payload.cfg_sel - 13 ] = write_req_payload.cfg_val_i32;
+                cfg_data_cpy.dstruct.vsense1_coeff[ write_req_payload.cfg_sel - 13 ] = write_req_payload.cfg_val_i32;
                 break;
             
             default:
@@ -200,9 +208,9 @@ static void CfgWrite ( void )
         if( fault_status == false )
         {
             // Program the updated RAM copy to the NVM page.
-            fault_status = NVMProgramPage( &cfg_data_cpy, 
+            fault_status = NVMProgramPage( cfg_data_cpy.data_u16, 
                                           __builtin_tblpage(   &cfg_data ), 
-                                          __builtin_tbloffset( &cfg_data )  );
+                                          __builtin_tbloffset( &cfg_data ) );
         }
         
         // Construct the Write Response message
@@ -251,7 +259,7 @@ static void CfgRead ( void )
         switch( read_resp_payload.cfg_sel )
         {
             case 0:
-                read_resp_payload.cfg_val_u8 = cfg_data.node_id;
+                read_resp_payload.cfg_val_u8 = cfg_data.dstruct.node_id;
                 break;
                 
             case 1:
@@ -260,7 +268,7 @@ static void CfgRead ( void )
             case 4:
             case 5:
             case 6:
-                read_resp_payload.cfg_val_i32 = cfg_data.pwm_coeff[ read_resp_payload.cfg_sel - 1 ];
+                read_resp_payload.cfg_val_i32 = cfg_data.dstruct.pwm_coeff[ read_resp_payload.cfg_sel - 1 ];
                 break;
             
             case 7:
@@ -269,7 +277,7 @@ static void CfgRead ( void )
             case 10:
             case 11:
             case 12:
-                read_resp_payload.cfg_val_i32 = cfg_data.vsense1_coeff[ read_resp_payload.cfg_sel - 7 ];
+                read_resp_payload.cfg_val_i32 = cfg_data.dstruct.vsense1_coeff[ read_resp_payload.cfg_sel - 7 ];
                 break;
             
             case 13:
@@ -278,7 +286,7 @@ static void CfgRead ( void )
             case 16:
             case 17:
             case 18:
-                read_resp_payload.cfg_val_i32 = cfg_data.vsense2_coeff[ read_resp_payload.cfg_sel - 13 ];
+                read_resp_payload.cfg_val_i32 = cfg_data.dstruct.vsense2_coeff[ read_resp_payload.cfg_sel - 13 ];
                 break;
             
             default:

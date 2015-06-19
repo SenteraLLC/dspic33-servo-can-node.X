@@ -36,12 +36,12 @@
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
 // *****************************************************************************
-static long double UtilPow( uint16_t var, uint8_t pow );
+static long double UtilPow( int16_t var, uint8_t pow );
 
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
-int16_t UtilPolyMul( uint16_t var, int32_t coeff[], uint8_t coeff_len )
+int16_t UtilPolyMul( int16_t var, int32_t coeff[], uint8_t coeff_len )
 {
     long double value;
     uint8_t coeff_idx;
@@ -86,11 +86,56 @@ void UtilDelay( uint16_t ms_delay )
 // *****************************************************************************
 // ************************** Static Functions *********************************
 // *****************************************************************************
-static long double UtilPow( uint16_t var, uint8_t pow )
+
+// required input parameter 'var' scaling = 1E3.
+//
+// output parameter scaling = 1E6.
+//
+static int64_t UtilPow( int16_t var, uint8_t pow )
 {
-    long double result;
+    static const int64_t var_mul    = 1E3;
+    static const int64_t calc_mul   = 1E6;
+    static const int64_t return_mul = 1E6;
     
-    result = powl( (long double) var, (long double) pow );
+    int64_t result = 0;
+    uint8_t pow_idx;
+    int64_t var_scaled;
+        
+    // Treat special case of pow = 0.
+    if( pow == 0 )
+    {
+        // Return a value of '1'.
+        // -> scale = 1E6
+        //
+        result = 1 * return_mul;
+    }
+    // pow != 0, compute the result by multiplying 'var' by itself for the
+    // number of times equal to 'pow'.
+    else
+    {
+        // Up-scale the input parameter 'var' for internal calculation.
+        // -> scale = 1E3 * ( 1E6 / 1E3 ) = 1E6
+        var_scaled = var * ( calc_mul / var_mul );
+        
+        result = var_scaled;
+        
+        for( pow_idx = 0;
+             pow_idx < ( pow - 1 );
+             pow_idx++ )
+        {
+            // Perform additional multiplication of 'var' value.
+            // -> scale = 1E6 * 1E6 = 1E12
+            result *= var_scaled;
+            
+            // Down-scale result back to calculation multiplier.
+            // -> scale = 1E12 / 1E6 = 1E6
+            result /= calc_mul;
+        }
+        
+        // Down-scale calculation result to output scaling.
+        //  -> scale = 1E6 / ( 1E6 / 1E6 ) = 1E6
+        result = result / ( calc_mul / return_mul );
+    }
     
     return result;
 }

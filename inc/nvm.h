@@ -30,7 +30,7 @@ bool NVMErasePage ( uint16_t table_page,
 /// @param 
 /// @return
 ////////////////////////////////////////////////////////////////////////////////
-bool NVMProgramPage ( void*    src_data,
+bool NVMProgramPage ( const uint16_t src_data[],
                       uint16_t table_page, 
                       uint16_t table_offset );
 

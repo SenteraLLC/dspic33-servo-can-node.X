@@ -36,9 +36,9 @@
 // *****************************************************************************
 // ************************** File-Scope Variable Definitions ******************
 // *****************************************************************************
-static uint16_t servo_cmd_type;
-static uint16_t servo_cmd_pwm;
-static int16_t  servo_cmd_pos;
+static uint16_t servo_cmd_type = 0;     // Default to PWM command type.
+static uint16_t servo_cmd_pwm  = 1500;  // Default to 1500us command pulse.
+static int16_t  servo_cmd_pos  = 0;     // Default to 0.0 radian position.
 static uint16_t servo_act_pwm;
 
 // *****************************************************************************
@@ -84,7 +84,27 @@ void ServoService ( void )
     else
     {
         // Commanded PWM is used directly for control.
-        servo_act_pwm = servo_cmd_pwm;
+         servo_act_pwm = servo_cmd_pwm;                                       
+        
+//        static uint16_t servo_val  = 1500;                                    // DEBUG CODE: TEMPORARY INSTRUMENTATION
+//        static uint16_t tmr_update = 0;
+//        
+//        tmr_update++;
+//        
+//        // increment servo every 1s
+//        if( tmr_update >= 100 )
+//        {
+//            servo_val += 50;
+//            tmr_update = 0;
+//        }
+//        
+//        // roll-over servo at 1800us
+//        if( servo_val > 1800 )
+//        {
+//            servo_val = 1500;
+//        }
+//        
+//        servo_act_pwm = servo_val;
     }
     
     // Update PWM duty cycle with that determined.

@@ -72,10 +72,7 @@ int main ( void )
 } 
 
 void __interrupt( no_auto_psv ) _T1Interrupt ( void )
-{   
-    // Service the timer interrupt.
-    HwTMR1Service();
-    
+{    
     // INPUT - Aquire input signals for software cycle execution.
     ADCService();
     INA219Service();
@@ -88,6 +85,9 @@ void __interrupt( no_auto_psv ) _T1Interrupt ( void )
     CfgService();
     RSTService();
     VerService();
+    
+    // Service the timer interrupt.
+    HwTMR1Service();
 }
 
 void __interrupt( no_auto_psv ) _T2Interrupt ( void )
