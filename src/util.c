@@ -36,7 +36,7 @@
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
 // *****************************************************************************
-static int64_t UtilPow( int64_t var_in, uint64_t var_mul, uint8_t power );
+static int32_t UtilPow( int32_t var_in, uint32_t var_mul, uint8_t power );
 
 // *****************************************************************************
 // ************************** Global Functions *********************************
@@ -89,24 +89,25 @@ void UtilDelay( uint16_t ms_delay )
 // *****************************************************************************
 // ************************** Static Functions *********************************
 // *****************************************************************************
-static int64_t UtilPow( int64_t var_in, uint64_t var_mul, uint8_t power )
+static int32_t UtilPow( int32_t var_in, uint32_t var_mul, uint8_t power )
 {    
-    int64_t result;
+    int32_t result;
+    int64_t intermediate_mul;
     uint8_t pow_idx;
         
     // Treat special case of power = 0.
     if( power == 0 )
     {
         // Return a value of '1'.
-        // -> scale = var_mul
-        result = 1 * var_mul;
+        // ~ scale = var_mul (32-bit)
+        result = var_mul;
     }
     // power != 0, compute the result by multiplying 'var' by itself for the
     // number of times equal to 'pow'.
     else
     {
         // Stored 1st power value.
-        // -> scale = var_mul
+        // ~ scale = var_mul (32-bit)
         result = var_in;
         
         // Calculated 2nd to nth power value.
@@ -115,12 +116,14 @@ static int64_t UtilPow( int64_t var_in, uint64_t var_mul, uint8_t power )
              pow_idx++ )
         {
             // Perform additional multiplication of input variable.
-            // -> scale = 2 * var_mul
-            result *= var_in;
+            // ~ 64-bit multiplication performed.
+            // ~ scale = 2 * var_mul (64-bit)
+            intermediate_mul = ((int64_t) result) * ((int64_t) var_in);
             
             // Down-scale result back to input variable multiplier.
-            // -> scale = var_mul
-            result /= var_mul;
+            // ~ 64-bit division performed
+            // ~ scale = var_mul (32-bit)
+            result = intermediate_mul / var_mul;
         }
     }
     
