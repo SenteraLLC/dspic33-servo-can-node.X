@@ -56,7 +56,7 @@ void WDTEnable ( void )
     // Note: enabling of the watchdog timer causes a reset of the counter
     // value.
     //    
-    // RCONbits.SWDTEN = 1;                                                     DEBUG: TEMPORARILY DISABLED
+    // RCONbits.SWDTEN = 1;                                                        // DEBUG: TEMPORARILY DISABLED
 }
 
 void WDTDisable ( void )

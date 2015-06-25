@@ -36,24 +36,27 @@
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
 // *****************************************************************************
-static long double UtilPow( int16_t var, uint8_t pow );
+static int64_t UtilPow( int64_t var_in, uint64_t var_mul, uint8_t power );
 
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
-int16_t UtilPolyMul( int16_t var, int32_t coeff[], uint8_t coeff_len )
+int64_t UtilPoly( int64_t  var_in,
+                  uint64_t var_mul,
+                  int32_t  coeff[], 
+                  uint8_t  coeff_len )
 {
-    long double value;
+    int64_t result = 0;
     uint8_t coeff_idx;
     
-    for ( coeff_idx  = 0;
-          coeff_idx <= coeff_len;
+    for ( coeff_idx = 0;
+          coeff_idx < coeff_len;
           coeff_idx++ )
     {
-        value = UtilPow( var, coeff_idx ) * coeff[ coeff_idx ];
+        result += UtilPow( var_in, var_mul, coeff_idx ) * coeff[ coeff_idx ];
     }
     
-    return ( (int16_t) value );
+    return result;
 }
 
 // Note: internal scaling by 10 is performed; input parameter 'ms_delay'
@@ -86,55 +89,39 @@ void UtilDelay( uint16_t ms_delay )
 // *****************************************************************************
 // ************************** Static Functions *********************************
 // *****************************************************************************
-
-// required input parameter 'var' scaling = 1E3.
-//
-// output parameter scaling = 1E6.
-//
-static int64_t UtilPow( int16_t var, uint8_t pow )
-{
-    static const int64_t var_mul    = 1E3;
-    static const int64_t calc_mul   = 1E6;
-    static const int64_t return_mul = 1E6;
-    
-    int64_t result = 0;
+static int64_t UtilPow( int64_t var_in, uint64_t var_mul, uint8_t power )
+{    
+    int64_t result;
     uint8_t pow_idx;
-    int64_t var_scaled;
         
-    // Treat special case of pow = 0.
-    if( pow == 0 )
+    // Treat special case of power = 0.
+    if( power == 0 )
     {
         // Return a value of '1'.
-        // -> scale = 1E6
-        //
-        result = 1 * return_mul;
+        // -> scale = var_mul
+        result = 1 * var_mul;
     }
-    // pow != 0, compute the result by multiplying 'var' by itself for the
+    // power != 0, compute the result by multiplying 'var' by itself for the
     // number of times equal to 'pow'.
     else
     {
-        // Up-scale the input parameter 'var' for internal calculation.
-        // -> scale = 1E3 * ( 1E6 / 1E3 ) = 1E6
-        var_scaled = var * ( calc_mul / var_mul );
+        // Stored 1st power value.
+        // -> scale = var_mul
+        result = var_in;
         
-        result = var_scaled;
-        
-        for( pow_idx = 0;
-             pow_idx < ( pow - 1 );
+        // Calculated 2nd to nth power value.
+        for( pow_idx = 1;
+             pow_idx < power;
              pow_idx++ )
         {
-            // Perform additional multiplication of 'var' value.
-            // -> scale = 1E6 * 1E6 = 1E12
-            result *= var_scaled;
+            // Perform additional multiplication of input variable.
+            // -> scale = 2 * var_mul
+            result *= var_in;
             
-            // Down-scale result back to calculation multiplier.
-            // -> scale = 1E12 / 1E6 = 1E6
-            result /= calc_mul;
+            // Down-scale result back to input variable multiplier.
+            // -> scale = var_mul
+            result /= var_mul;
         }
-        
-        // Down-scale calculation result to output scaling.
-        //  -> scale = 1E6 / ( 1E6 / 1E6 ) = 1E6
-        result = result / ( calc_mul / return_mul );
     }
     
     return result;

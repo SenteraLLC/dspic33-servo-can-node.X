@@ -3,7 +3,7 @@
 /// @file   $FILE$
 /// @author $AUTHOR$
 /// @date   $DATE$
-/// @brief  Source code file for defining hardware operation.   
+/// @brief  ??? 
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -29,6 +29,58 @@
 // ************************** Defines ******************************************
 // *****************************************************************************
 
+// Scaling factors for servo correction polynomial fields:
+//
+// - Coefficient scale      = 1E8 - ( i.e. LSB = 0.01  us/rad^x ).
+// - PWM input scale        = 1E3 - ( i.e. LSB = 0.001 rad      ).
+// - PWM calculation scale  = 1E9 - ( i.e. LSB = 1.0   nano-rad ).
+// - PWM output scale       = 1E6 - ( i.e. LSB = 1.0   us       ).
+//
+// Rationale:
+//  The polynomial equation is implemented using fixed-point math since the 
+//  hardware does not natively support floating-point arithmetic and the 
+//  execution time of a floating-point implementation exceeds that available
+//  for the calculation resolution required (i.e. double-precision).
+//
+// -----------------------------------------------------------------------------
+//
+// Coefficient scale:
+//  Input polynomial coefficients scaling is expected to be 1E8.
+//
+// PWM input scale:
+//  Input servo position command scaling is expected to be 1E3.
+//  
+// PWM calculation scale
+//  The servo position command is up-scaled for resolution on internal 
+//  calculation.  This is critical for maintained accuracy through the power
+//  terms (e.g. pos^5) of the polynomial equation.
+//
+// PWM output scale:
+//  The output of the polynomial equation has a scaling based to the 
+//  coefficients and variable scaling (i.e. 1E8 * 1E9).  The output is 
+//  down-scaled to remove the input scaling, and get the result term to the 
+//  required units (i.e. micro-seconds, 1E6).
+//
+// -----------------------------------------------------------------------------
+//
+// Dynamic Range:
+//  With a PWM input dynamic range of [-1.000:1.000] radians, the
+//  calculation scaled value spans [-1E9:1E9].  With coefficient values 
+//  having a storage size of int32_t (i.e. [-2.15E9:2.15E9]) the maximum
+//  polynomial result achievable (with a 5th degree polynomial) is 
+//  approximately [-1.2E19:1.2E19].  This value is just outside the 
+//  storage size for int64_t, but is used as it yields a significant
+//  calculation resolution and risk of overflow is essentially
+//  non-existent.
+//
+#define SERVO_COEFF_IN_SCALE     100000000ULL
+#define SERVO_PWM_IN_SCALE            1000ULL
+#define SERVO_PWM_CALC_SCALE    1000000000ULL
+#define SERVO_PWM_OUT_SCALE        1000000ULL
+
+#define SERVO_CALC_IN_MUL      (SERVO_PWM_CALC_SCALE/SERVO_PWM_IN_SCALE)
+#define SERVO_CALC_OUT_DIV     ((SERVO_COEFF_IN_SCALE*SERVO_PWM_CALC_SCALE)/SERVO_PWM_OUT_SCALE)
+
 // *****************************************************************************
 // ************************** Global Variable Definitions **********************
 // *****************************************************************************
@@ -39,7 +91,7 @@
 static uint16_t servo_cmd_type = 0;     // Default to PWM command type.
 static uint16_t servo_cmd_pwm  = 1500;  // Default to 1500us command pulse.
 static int16_t  servo_cmd_pos  = 0;     // Default to 0.0 radian position.
-static uint16_t servo_act_pwm;
+static uint16_t servo_act_pwm  = 1500;  // Default to 1500us pulse.
 
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
@@ -53,6 +105,8 @@ void ServoService ( void )
     uint16_t servo_voltage;
     
     int32_t servo_coeff[ CFG_PWM_COEFF_LEN ];
+    
+    int64_t servo_act_pwm_i64;
     
     bool payload_valid;
     
@@ -79,32 +133,18 @@ void ServoService ( void )
         CfgPWMCoeffGet( &servo_coeff[ 0 ] );
         
         // Perform correction of position commanded value.
-        // servo_act_pwm = UtilPolyMul( servo_cmd_pos, &servo_coeff[ 0 ], CFG_PWM_COEFF_LEN );  COMMENTED OUT FOR DEBUGGING
+        servo_act_pwm_i64 = UtilPoly( servo_cmd_pos * SERVO_CALC_IN_MUL,
+                                      SERVO_PWM_CALC_SCALE,
+                                      &servo_coeff[ 0 ], 
+                                      CFG_PWM_COEFF_LEN );
+        
+        // Down-scale and typecast value back to integer type (micro-sec LSB).
+        servo_act_pwm = (uint16_t) ( servo_act_pwm_i64 / SERVO_CALC_OUT_DIV );
     }
     else
     {
         // Commanded PWM is used directly for control.
-         servo_act_pwm = servo_cmd_pwm;                                       
-        
-//        static uint16_t servo_val  = 1500;                                    // DEBUG CODE: TEMPORARY INSTRUMENTATION
-//        static uint16_t tmr_update = 0;
-//        
-//        tmr_update++;
-//        
-//        // increment servo every 1s
-//        if( tmr_update >= 100 )
-//        {
-//            servo_val += 50;
-//            tmr_update = 0;
-//        }
-//        
-//        // roll-over servo at 1800us
-//        if( servo_val > 1800 )
-//        {
-//            servo_val = 1500;
-//        }
-//        
-//        servo_act_pwm = servo_val;
+        servo_act_pwm = servo_cmd_pwm;                                       
     }
     
     // Update PWM duty cycle with that determined.

@@ -40,7 +40,7 @@ typedef union
 {
     struct
     {
-        uint8_t  node_id;                                   // word  0      (note: padded)
+        uint8_t  node_id;                                   // word  0          (note: padded to word size)
         int32_t  pwm_coeff[ CFG_PWM_COEFF_LEN ];            // word  1-12
         int32_t  vsense1_coeff[ CFG_VSENSE1_COEFF_LEN ];    // word 13-24
         int32_t  vsense2_coeff[ CFG_VSENSE2_COEFF_LEN ];    // word 25-36
@@ -64,24 +64,24 @@ typedef union
 static const CFG_DATA_U __align( 1024 ) cfg_data =
 {
     {
-        0x7F,       // Initialize node_id to maximum 7-bit value.
-        { 0x76543210 },                                                             // DEGUG CODE TEMP VALUE, SHOULD INITIALIZE TO ZERO ORDER POLYNOMIAL WITH CONSTANT VALUE OF 1.
-        { 0xFEDCBA98 },                                                             // DEGUG CODE TEMP VALUE, SHOULD INITIALIZE TO ZERO ORDER POLYNOMIAL WITH CONSTANT VALUE OF 1.
-        { 0x11223344 },                                                             // DEGUG CODE TEMP VALUE, SHOULD INITIALIZE TO ZERO ORDER POLYNOMIAL WITH CONSTANT VALUE OF 1.
-        { 0x5566 },                                                                 // DEGUG CODE TEMP VALUE, SHOULD INITIALIZE TO ZEROS.
+        0x7F,                   // Initialize node_id to maximum 7-bit value.
+        { 0, 1, 0, 0, 0, 0 },   // Initialize coefficients to 1st-degree polynomial with no scaling.
+        { 0, 1, 0, 0, 0, 0 },   // Initialize coefficients to 1st-degree polynomial with no scaling.
+        { 0, 1, 0, 0, 0, 0 },   // Initialize coefficients to 1st-degree polynomial with no scaling.
+        { 0 },                  // Set reserved storage to '0'.
     }
 };
 
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
 // *****************************************************************************
-static void CfgWrite ( void );
-static void CfgRead ( void );
+static void CfgWrite( void );
+static void CfgRead( void );
 
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
-void CfgService ( void )
+void CfgService( void )
 {
     // Service a write request.
     CfgWrite();
@@ -90,12 +90,12 @@ void CfgService ( void )
     CfgRead();
 }
 
-uint8_t CfgNodeIdGet ( void )
+uint8_t CfgNodeIdGet( void )
 {
     return cfg_data.dstruct.node_id;
 }
 
-void CfgPWMCoeffGet ( int32_t pwm_coeff[ CFG_PWM_COEFF_LEN ] )
+void CfgPWMCoeffGet( int32_t pwm_coeff[ CFG_PWM_COEFF_LEN ] )
 {
     uint8_t coeff_idx;
     
@@ -107,7 +107,7 @@ void CfgPWMCoeffGet ( int32_t pwm_coeff[ CFG_PWM_COEFF_LEN ] )
     }
 }
 
-void CfgVsense1CoeffGet ( int32_t vsense1_coeff[ CFG_VSENSE1_COEFF_LEN ] )
+void CfgVsense1CoeffGet( int32_t vsense1_coeff[ CFG_VSENSE1_COEFF_LEN ] )
 {
     uint8_t coeff_idx;
     
@@ -119,7 +119,7 @@ void CfgVsense1CoeffGet ( int32_t vsense1_coeff[ CFG_VSENSE1_COEFF_LEN ] )
     }
 }
 
-void CfgVsense2CoeffGet ( int32_t vsense2_coeff[ CFG_VSENSE2_COEFF_LEN ] )
+void CfgVsense2CoeffGet( int32_t vsense2_coeff[ CFG_VSENSE2_COEFF_LEN ] )
 {
     uint8_t coeff_idx;
     
@@ -140,7 +140,7 @@ void CfgVsense2CoeffGet ( int32_t vsense2_coeff[ CFG_VSENSE2_COEFF_LEN ] )
 /// @param 
 /// @return
 ////////////////////////////////////////////////////////////////////////////////
-static void CfgWrite ( void )
+static void CfgWrite( void )
 {
     static CFG_DATA_U cfg_data_cpy;
     
@@ -152,14 +152,13 @@ static void CfgWrite ( void )
     bool payload_valid;
     bool fault_status;
     
-    payload_valid = CANRxGet ( CAN_RX_MSG_CFG_WRITE_REQ, write_req_payload.data_u16 );
+    payload_valid = CANRxGet( CAN_RX_MSG_CFG_WRITE_REQ, write_req_payload.data_u16 );
     
     // Write request message received ?
     if( payload_valid == true )
     {
         // Copy the configuration data from NVM to RAM.
         cfg_data_cpy.dstruct = cfg_data.dstruct;
-        // cfg_data_cpy = cfg_data;
         
         // Update the selected fields in RAM with the new value.
         switch( write_req_payload.cfg_sel )
@@ -193,7 +192,7 @@ static void CfgWrite ( void )
             case 16:
             case 17:
             case 18:
-                cfg_data_cpy.dstruct.vsense1_coeff[ write_req_payload.cfg_sel - 13 ] = write_req_payload.cfg_val_i32;
+                cfg_data_cpy.dstruct.vsense2_coeff[ write_req_payload.cfg_sel - 13 ] = write_req_payload.cfg_val_i32;
                 break;
             
             default:
@@ -218,7 +217,7 @@ static void CfgWrite ( void )
         write_resp_payload.fault_status = fault_status;
         
         // Send the Write Response message.
-        CANTxSet ( CAN_TX_MSG_CFG_WRITE_RESP, write_resp_payload.data_u16 );
+        CANTxSet( CAN_TX_MSG_CFG_WRITE_RESP, write_resp_payload.data_u16 );
         
         // Node ID was updated ?
         if( node_id_update == true )
@@ -239,14 +238,14 @@ static void CfgWrite ( void )
 /// @param 
 /// @return
 ////////////////////////////////////////////////////////////////////////////////
-static void CfgRead ( void )
+static void CfgRead( void )
 {
     CAN_TX_READ_REQ_U   read_req_payload;      
     CAN_TX_READ_RESP_U  read_resp_payload;
 
     bool payload_valid;
     
-    payload_valid = CANRxGet ( CAN_RX_MSG_CFG_READ_REQ, read_req_payload.data_u16 );
+    payload_valid = CANRxGet( CAN_RX_MSG_CFG_READ_REQ, read_req_payload.data_u16 );
     
     // Read request message received ?
     if( payload_valid == true )
@@ -294,6 +293,6 @@ static void CfgRead ( void )
         }
         
         // Send the Read Response message.
-        CANTxSet ( CAN_TX_MSG_CFG_READ_RESP, read_resp_payload.data_u16 );
+        CANTxSet( CAN_TX_MSG_CFG_READ_RESP, read_resp_payload.data_u16 );
     }
 }

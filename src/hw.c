@@ -64,11 +64,11 @@
 // Note: Flprc accuracy is +-15% (see datasheet); therefore, selection of 32ms 
 // nominal time-out period results in a minimum time-out period of ~27ms.
 //
-#pragma config WDTPOST = PS32    // Select WDT postscaler = 32.
-#pragma config WDTPRE  = PR32    // Select SDT prescaler = 32.
-#pragma config FWDTEN  = OFF     // Disable WDT operation. WDT enabled in software.
-#pragma config WINDIS  = OFF     // Operate WDT in Non-Window Mode.
-#pragma config WDTWIN  = WIN25   // N/A - b/c of 'WINDIS' setting.
+#pragma config WDTPOST = PS32       // Select WDT postscaler = 32.
+#pragma config WDTPRE  = PR32       // Select SDT prescaler = 32.
+#pragma config FWDTEN  = ON_SWDTEN  // WDT disabled by default. WDT enabled in software.
+#pragma config WINDIS  = OFF        // Operate WDT in Non-Window Mode.
+#pragma config WDTWIN  = WIN25      // N/A - b/c of 'WINDIS' setting.
 
 // FPOR
 #pragma config BOREN0 = ON              // Brown Out Reset Detection Bit (BOR is Enabled)
@@ -92,7 +92,7 @@
 #pragma config DMTEN = DISABLE          // Dead Man Timer Enable Bit (Dead Man Timer is Disabled and can be enabled by software)
 
 // FDEVOPT
-#pragma config PWMLOCK = OFF             // PWM Lock Enable Bit (Certain PWM registers may only be written after key sequence)
+#pragma config PWMLOCK = ON             // PWM Lock Enable Bit (Certain PWM registers may only be written after key sequence)
 #pragma config ALTI2C1 = OFF            // Alternate I2C1 Pins Selection Bit (I2C1 mapped to SDA1/SCL1 pins)
 
 // FALTREG
@@ -322,6 +322,8 @@ static void HwTMR2Init( void )
     IPC1bits.T2IP   = 2;        // Select Timer 2 interrupt priority level.
     IFS0bits.T2IF   = 0;        // Clear Timer 2 interrupt flag.
     IEC0bits.T2IE   = 1;        // Enable Time 2 interrupt.
+    
+    T2CONbits.TON   = 1;        // Enable Timer.
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -331,5 +333,5 @@ static void HwTMR2Init( void )
 ////////////////////////////////////////////////////////////////////////////////
 static void HwIOInit( void )
 {
-    
+    // Set unused DSC pins as discrete outputs and drive to a logic-low.
 }

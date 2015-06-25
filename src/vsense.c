@@ -3,7 +3,7 @@
 /// @file   $FILE$
 /// @author $AUTHOR$
 /// @date   $DATE$
-/// @brief  Source code file for defining hardware operation.   
+/// @brief  V  
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -28,6 +28,55 @@
 // ************************** Defines ******************************************
 // *****************************************************************************
 
+// Scaling factors for VSENSE correction polynomial fields:
+//
+// - VSENSE calculation scale            = 1E6
+// - VSENSE calculation input multiplier = 1E3
+// - VSENSE calculation output divisor   = 1E13
+//
+// Rationale:
+//  The polynomial equation is implemented using fixed-point math since the 
+//  hardware does not natively support floating-point arithmetic and the 
+//  execution time of a floating-point implementation exceeds that available
+//  for the calculation resolution required (i.e. double-precision).
+//
+// -----------------------------------------------------------------------------
+//
+// VSENSE calculation scale:
+//  The VSENSE input is used assuming a radix point at 1.0E6.  This is
+//  critical for computation of the higher order power terms (e.g. vsense^5)
+//  so that integer saturation is prevented.
+//  
+// VSENSE calculation input multiplier:
+//  The VSENSE input is up-scaled for resolution on internal 
+//  calculation.  This is critical for maintained accuracy through the power
+//  terms (e.g. vsense^5) of the polynomial equation.
+//
+// VSENSE calculation output divisor:
+//  The output is down-scaled to remove the input scaling, and get the result 
+//  term to the required range (i.e. 16-bit signed integer).
+//
+// -----------------------------------------------------------------------------
+//
+// Dynamic Range:
+//  With a VSENSE input value of [0:4095], the calculation scaled value spans
+//  [0:4095000].  With a radix point at 1.0E6, taking this value to the 5th 
+//  degree yields a result in the range [0:1,151,514,817], which is within a
+//  32-bit integer storage size.
+//
+//  With coefficient values having a storage size of int32_t
+//  (i.e. [-2.15E9:2.15E9]) the maximum un-scaled polynomial result achievable
+//  (with a 5th degree polynomial) is approximately [-3.27E18:3.27E18], which
+//  is within a int64_t storage size.
+//
+#define VSENSE1_CALC_SCALE              1000000ULL
+#define VSENSE1_CALC_IN_MUL                1000ULL
+#define VSENSE1_CALC_OUT_DIV     10000000000000ULL
+
+#define VSENSE2_CALC_SCALE              1000000ULL
+#define VSENSE2_CALC_IN_MUL                1000ULL
+#define VSENSE2_CALC_OUT_DIV     10000000000000ULL
+
 // *****************************************************************************
 // ************************** Global Variable Definitions **********************
 // *****************************************************************************
@@ -48,10 +97,12 @@ void VsenseService( void )
     CAN_TX_VSENSE_DATA_U vsense_msg;
     
     uint16_t vsense1_raw;
+    int64_t  vsense1_cor_i64;
     int16_t  vsense1_cor;
     int32_t  vsense1_coeff[ CFG_VSENSE1_COEFF_LEN ];
     
     uint16_t vsense2_raw;
+    int64_t  vsense2_cor_i64;
     int16_t  vsense2_cor;
     int32_t  vsense2_coeff[ CFG_VSENSE2_COEFF_LEN ];
     
@@ -63,9 +114,23 @@ void VsenseService( void )
     CfgVsense1CoeffGet( &vsense1_coeff[ 0 ] );
     CfgVsense2CoeffGet( &vsense2_coeff[ 0 ] );
     
-    // Perform correction of vsense signals.
-    // vsense1_cor = UtilPolyMul( vsense1_raw, &vsense1_coeff[ 0 ], CFG_VSENSE1_COEFF_LEN );        COMMENTED OUT FOR DEBUGGING
-    // vsense2_cor = UtilPolyMul( vsense2_raw, &vsense2_coeff[ 0 ], CFG_VSENSE2_COEFF_LEN );        COMMENTED OUT FOR DEBUGGING
+    // Perform correction of VSENSE1 value
+    vsense1_cor_i64 = UtilPoly( vsense1_raw * VSENSE1_CALC_IN_MUL,
+                                VSENSE1_CALC_SCALE,
+                                &vsense1_coeff[ 0 ], 
+                                CFG_VSENSE1_COEFF_LEN );
+
+    // Down-scale and typecast value back to signed integer type.
+    vsense1_cor = (int16_t) ( vsense1_cor_i64 / VSENSE1_CALC_OUT_DIV );
+    
+    // Perform correction of VSENSE2 value
+    vsense2_cor_i64 = UtilPoly( vsense2_raw * VSENSE2_CALC_IN_MUL,
+                                VSENSE2_CALC_SCALE,
+                                &vsense2_coeff[ 0 ], 
+                                CFG_VSENSE2_COEFF_LEN );
+
+    // Down-scale and typecast value back to signed integer type.
+    vsense2_cor = (int16_t) ( vsense2_cor_i64 / VSENSE2_CALC_OUT_DIV );
     
     // Construct the vsense CAN message.
     vsense_msg.vsense1_raw = vsense1_raw;

@@ -10,7 +10,10 @@
 #ifndef UTIL_H_
 #define	UTIL_H_
 
-int16_t UtilPolyMul( uint16_t var, int32_t coeff[], uint8_t coeff_len );
+int64_t UtilPoly( int64_t  var_in,
+                  uint64_t var_mul,
+                  int32_t  coeff[], 
+                  uint8_t  coeff_len );
 
 void UtilDelay( uint16_t ms_time );
 
