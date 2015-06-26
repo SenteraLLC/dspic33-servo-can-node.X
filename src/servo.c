@@ -73,13 +73,27 @@
 //  calculation resolution and risk of overflow is essentially
 //  non-existent.
 //
-#define SERVO_COEFF_IN_SCALE     100000000ULL
-#define SERVO_PWM_IN_SCALE            1000ULL
-#define SERVO_PWM_CALC_SCALE    1000000000ULL
-#define SERVO_PWM_OUT_SCALE        1000000ULL
+//#define SERVO_COEFF_IN_SCALE     100000000ULL
+//#define SERVO_PWM_IN_SCALE            1000ULL
+//#define SERVO_PWM_CALC_SCALE    1000000000ULL
+//#define SERVO_PWM_OUT_SCALE        1000000ULL
+//
+//#define SERVO_CALC_IN_MUL      (SERVO_PWM_CALC_SCALE/SERVO_PWM_IN_SCALE)
+//#define SERVO_CALC_OUT_DIV     ((SERVO_COEFF_IN_SCALE*SERVO_PWM_CALC_SCALE)/SERVO_PWM_OUT_SCALE)
 
-#define SERVO_CALC_IN_MUL      (SERVO_PWM_CALC_SCALE/SERVO_PWM_IN_SCALE)
-#define SERVO_CALC_OUT_DIV     ((SERVO_COEFF_IN_SCALE*SERVO_PWM_CALC_SCALE)/SERVO_PWM_OUT_SCALE)
+//#define SERVO_SCALE_POS     3U
+//#define SERVO_SCALE_COEFF   8U
+//#define SERVO_SCALE_PWM     6U
+//#define SERVO_PWM_DIV_ORDER ((SERVO_SCALE_COEFF+SERVO_SCALE_POS)-SERVO_SCALE_PWM)
+
+// The result of the polynomial equation needs to be divided to the expected scale (i.e. us)
+#define SERVO_PWM_DIV       100U
+
+// #define SERVO_SCALE_RAW    1000U
+#define SERVO_QNUM_CALC      30U
+// #define SERVO_QNUM_COR       15U
+
+
 
 // *****************************************************************************
 // ************************** Global Variable Definitions **********************
@@ -106,7 +120,8 @@ void ServoService ( void )
     
     int32_t servo_coeff[ CFG_PWM_COEFF_LEN ];
     
-    int64_t servo_act_pwm_i64;
+    int32_t servo_cmd_pos_in;
+    int32_t servo_act_pwm_i32;
     
     bool payload_valid;
     
@@ -132,14 +147,19 @@ void ServoService ( void )
         // Get servo polynomial coefficient correction values.
         CfgPWMCoeffGet( &servo_coeff[ 0 ] );
         
+        // Note: Implementation defined behavior.  Shift operators retain the sign.
+        servo_cmd_pos_in = ((int32_t) servo_cmd_pos) << 21; // up-scale to maximize storage in int32_t.
+        servo_cmd_pos_in = servo_cmd_pos_in / 1000;         // remove base_10 scaling.
+        servo_cmd_pos_in = servo_cmd_pos_in << 9;           // up-scale to Q30 representation.
+        
         // Perform correction of position commanded value.
-        servo_act_pwm_i64 = UtilPoly( servo_cmd_pos * SERVO_CALC_IN_MUL,
-                                      SERVO_PWM_CALC_SCALE,
-                                      &servo_coeff[ 0 ], 
-                                      CFG_PWM_COEFF_LEN );
+        servo_act_pwm_i32 = UtilPoly32( servo_cmd_pos_in,
+                                        SERVO_QNUM_CALC,
+                                        &servo_coeff[ 0 ], 
+                                        CFG_PWM_COEFF_LEN );
         
         // Down-scale and typecast value back to integer type (micro-sec LSB).
-        servo_act_pwm = (uint16_t) ( servo_act_pwm_i64 / SERVO_CALC_OUT_DIV );
+        servo_act_pwm = (uint16_t) ( servo_act_pwm_i32 / SERVO_PWM_DIV );
     }
     else
     {

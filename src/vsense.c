@@ -69,13 +69,15 @@
 //  (with a 5th degree polynomial) is approximately [-3.27E18:3.27E18], which
 //  is within a int64_t storage size.
 //
-#define VSENSE1_CALC_SCALE              1000000ULL
-#define VSENSE1_CALC_IN_MUL                1000ULL
-#define VSENSE1_CALC_OUT_DIV     10000000000000ULL
+#define VSENSE1_QNUM_RAW       12U
+#define VSENSE1_QNUM_CALC      30U
+// #define VSENSE1_QNUM_COR       15U
+#define VSENSE1_DIV       100U
 
-#define VSENSE2_CALC_SCALE              1000000ULL
-#define VSENSE2_CALC_IN_MUL                1000ULL
-#define VSENSE2_CALC_OUT_DIV     10000000000000ULL
+#define VSENSE2_QNUM_RAW       12U
+#define VSENSE2_QNUM_CALC      30U
+// #define VSENSE2_QNUM_COR       15U
+#define VSENSE2_DIV       100U
 
 // *****************************************************************************
 // ************************** Global Variable Definitions **********************
@@ -97,12 +99,14 @@ void VsenseService( void )
     CAN_TX_VSENSE_DATA_U vsense_msg;
     
     uint16_t vsense1_raw;
-    int64_t  vsense1_cor_i64;
+    int32_t  vsense1_in;
+    int32_t  vsense1_cor_i32;
     int16_t  vsense1_cor;
     int32_t  vsense1_coeff[ CFG_VSENSE1_COEFF_LEN ];
     
     uint16_t vsense2_raw;
-    int64_t  vsense2_cor_i64;
+    int32_t  vsense2_in;
+    int32_t  vsense2_cor_i32;
     int16_t  vsense2_cor;
     int32_t  vsense2_coeff[ CFG_VSENSE2_COEFF_LEN ];
     
@@ -114,23 +118,32 @@ void VsenseService( void )
     CfgVsense1CoeffGet( &vsense1_coeff[ 0 ] );
     CfgVsense2CoeffGet( &vsense2_coeff[ 0 ] );
     
+    // Scale VSENSE1 by the calculation factor.
+    vsense1_in = ((int32_t) vsense1_raw) << ( VSENSE1_QNUM_CALC - VSENSE1_QNUM_RAW );
+    
     // Perform correction of VSENSE1 value
-    vsense1_cor_i64 = UtilPoly( vsense1_raw * VSENSE1_CALC_IN_MUL,
-                                VSENSE1_CALC_SCALE,
-                                &vsense1_coeff[ 0 ], 
-                                CFG_VSENSE1_COEFF_LEN );
+    vsense1_cor_i32 = UtilPoly32( vsense1_in,
+                                  VSENSE1_QNUM_CALC,
+                                  &vsense1_coeff[ 0 ], 
+                                  CFG_VSENSE1_COEFF_LEN );
 
-    // Down-scale and typecast value back to signed integer type.
-    vsense1_cor = (int16_t) ( vsense1_cor_i64 / VSENSE1_CALC_OUT_DIV );
+    // Down-scale the VSENSE1 result to the correction factors Q-number.
+    // vsense1_cor = (int16_t) ( vsense1_cor_i32 >> ( VSENSE1_QNUM_CALC - VSENSE1_QNUM_COR ) );
+    vsense1_cor = (int16_t) ( vsense1_cor_i32 / VSENSE1_DIV );
+    
+    // Scale VSENSE12 by the calculation factor.
+    vsense2_in = ((int32_t) vsense2_raw) << ( VSENSE2_QNUM_CALC - VSENSE2_QNUM_RAW );
     
     // Perform correction of VSENSE2 value
-    vsense2_cor_i64 = UtilPoly( vsense2_raw * VSENSE2_CALC_IN_MUL,
-                                VSENSE2_CALC_SCALE,
-                                &vsense2_coeff[ 0 ], 
-                                CFG_VSENSE2_COEFF_LEN );
+    vsense2_cor_i32 = UtilPoly32( vsense2_in,
+                                  VSENSE2_QNUM_CALC,
+                                  &vsense2_coeff[ 0 ], 
+                                  CFG_VSENSE2_COEFF_LEN );
 
-    // Down-scale and typecast value back to signed integer type.
-    vsense2_cor = (int16_t) ( vsense2_cor_i64 / VSENSE2_CALC_OUT_DIV );
+    // Down-scale the VSENSE2 result to the correction factors Q-number.
+    // vsense2_cor = (int16_t) ( vsense2_cor_i32 >> ( VSENSE2_QNUM_CALC - VSENSE2_QNUM_COR ) );
+    vsense2_cor = (int16_t) ( vsense2_cor_i32 / VSENSE2_DIV );
+    
     
     // Construct the vsense CAN message.
     vsense_msg.vsense1_raw = vsense1_raw;
