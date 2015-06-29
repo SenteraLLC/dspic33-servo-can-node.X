@@ -72,28 +72,11 @@
 //  storage size for int64_t, but is used as it yields a significant
 //  calculation resolution and risk of overflow is essentially
 //  non-existent.
-//
-//#define SERVO_COEFF_IN_SCALE     100000000ULL
-//#define SERVO_PWM_IN_SCALE            1000ULL
-//#define SERVO_PWM_CALC_SCALE    1000000000ULL
-//#define SERVO_PWM_OUT_SCALE        1000000ULL
-//
-//#define SERVO_CALC_IN_MUL      (SERVO_PWM_CALC_SCALE/SERVO_PWM_IN_SCALE)
-//#define SERVO_CALC_OUT_DIV     ((SERVO_COEFF_IN_SCALE*SERVO_PWM_CALC_SCALE)/SERVO_PWM_OUT_SCALE)
 
-//#define SERVO_SCALE_POS     3U
-//#define SERVO_SCALE_COEFF   8U
-//#define SERVO_SCALE_PWM     6U
-//#define SERVO_PWM_DIV_ORDER ((SERVO_SCALE_COEFF+SERVO_SCALE_POS)-SERVO_SCALE_PWM)
 
 // The result of the polynomial equation needs to be divided to the expected scale (i.e. us)
 #define SERVO_PWM_DIV       100U
-
-// #define SERVO_SCALE_RAW    1000U
 #define SERVO_QNUM_CALC      30U
-// #define SERVO_QNUM_COR       15U
-
-
 
 // *****************************************************************************
 // ************************** Global Variable Definitions **********************
