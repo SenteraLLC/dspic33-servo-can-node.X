@@ -4,7 +4,7 @@
 /// @file   $FILE$
 /// @author $AUTHOR$
 /// @date   $DATE$
-/// @brief  Source code file for defining hardware operation.   
+/// @brief  ???
 ///
 ////////////////////////////////////////////////////////////////////////////////
 

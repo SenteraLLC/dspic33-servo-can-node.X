@@ -3,7 +3,7 @@
 /// @file   $FILE$
 /// @author $AUTHOR$
 /// @date   $DATE$
-/// @brief  Source code file for defining hardware operation.   
+/// @brief  ???   
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -36,24 +36,36 @@
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
 // *****************************************************************************
-static int32_t UtilPow( int32_t var_in, uint32_t var_mul, uint8_t power );
+static int32_t UtilPow( int32_t var_in, uint8_t calc_qnum, uint8_t power );
 
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
-int64_t UtilPoly( int64_t  var_in,
-                  uint64_t var_mul,
-                  int32_t  coeff[], 
-                  uint8_t  coeff_len )
+int32_t UtilPoly32( int32_t var_in,
+                    uint8_t calc_qnum,
+                    int32_t coeff[], 
+                    uint8_t coeff_len )
 {
-    int64_t result = 0;
+    int32_t result = 0;
+    int32_t var_term;
+    int64_t intermediate_mul;
     uint8_t coeff_idx;
     
     for ( coeff_idx = 0;
           coeff_idx < coeff_len;
           coeff_idx++ )
     {
-        result += UtilPow( var_in, var_mul, coeff_idx ) * coeff[ coeff_idx ];
+        // Calculate the variable power value.
+        var_term = UtilPow( var_in, calc_qnum, coeff_idx );
+        
+        // Calculate the polynomial term.
+        // ~ 64-bit multiplication performed.
+        // ~ scale = calc_qnum * coeff_scale
+        intermediate_mul = ((int64_t) var_term) * ((int64_t) coeff[ coeff_idx ]);
+        
+        // Update the result with the polynomial term.
+        // ~ scale = coeff_scale
+        result += (int32_t) (intermediate_mul >> calc_qnum);
     }
     
     return result;
@@ -89,7 +101,7 @@ void UtilDelay( uint16_t ms_delay )
 // *****************************************************************************
 // ************************** Static Functions *********************************
 // *****************************************************************************
-static int32_t UtilPow( int32_t var_in, uint32_t var_mul, uint8_t power )
+static int32_t UtilPow( int32_t var_in, uint8_t calc_qnum, uint8_t power )
 {    
     int32_t result;
     int64_t intermediate_mul;
@@ -99,15 +111,13 @@ static int32_t UtilPow( int32_t var_in, uint32_t var_mul, uint8_t power )
     if( power == 0 )
     {
         // Return a value of '1'.
-        // ~ scale = var_mul (32-bit)
-        result = var_mul;
+        result = 1L << calc_qnum;
     }
     // power != 0, compute the result by multiplying 'var' by itself for the
     // number of times equal to 'pow'.
     else
     {
         // Stored 1st power value.
-        // ~ scale = var_mul (32-bit)
         result = var_in;
         
         // Calculated 2nd to nth power value.
@@ -117,13 +127,12 @@ static int32_t UtilPow( int32_t var_in, uint32_t var_mul, uint8_t power )
         {
             // Perform additional multiplication of input variable.
             // ~ 64-bit multiplication performed.
-            // ~ scale = 2 * var_mul (64-bit)
+            // ~ scale = 2 * calc_qnum
             intermediate_mul = ((int64_t) result) * ((int64_t) var_in);
             
-            // Down-scale result back to input variable multiplier.
-            // ~ 64-bit division performed
-            // ~ scale = var_mul (32-bit)
-            result = intermediate_mul / var_mul;
+            // Down-scale result back to input calculation Q-number.
+            // ~ scale = calc_qnum
+            result = (int32_t) (intermediate_mul >> calc_qnum);
         }
     }
     

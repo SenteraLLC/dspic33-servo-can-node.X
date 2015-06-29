@@ -4,7 +4,7 @@
 /// @file   $FILE$
 /// @author $AUTHOR$
 /// @date   $DATE$
-/// @brief  Source code file for defining hardware operation.   
+/// @brief  ???   
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -54,8 +54,7 @@ void WDTEnable ( void )
     // Enable watchdog timer operation.
     //
     // Note: enabling of the watchdog timer causes a reset of the counter
-    // value.
-    //    
+    // value. 
     // RCONbits.SWDTEN = 1;                                                        // DEBUG: TEMPORARILY DISABLED
 }
 
