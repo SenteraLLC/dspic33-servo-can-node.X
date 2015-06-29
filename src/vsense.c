@@ -3,7 +3,7 @@
 /// @file   $FILE$
 /// @author $AUTHOR$
 /// @date   $DATE$
-/// @brief  V  
+/// @brief  ??? 
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -30,9 +30,9 @@
 
 // Scaling factors for VSENSE correction polynomial fields:
 //
-// - VSENSE calculation scale            = 1E6
-// - VSENSE calculation input multiplier = 1E3
-// - VSENSE calculation output divisor   = 1E13
+// - Coefficient scale   = 1E4
+// - Input scale         = 1E0
+// - Output scale        = 1E2
 //
 // Rationale:
 //  The polynomial equation is implemented using fixed-point math since the 
@@ -40,44 +40,38 @@
 //  execution time of a floating-point implementation exceeds that available
 //  for the calculation resolution required (i.e. double-precision).
 //
+//  Additionally, base2 fixed-point math is used rather than base10 as 
+//  64-bit division is required and the time required for a base10 
+//  implementation (i.e. integer division rather than bit-shift) exceeds
+//  the processing time available.
+//
 // -----------------------------------------------------------------------------
 //
-// VSENSE calculation scale:
-//  The VSENSE input is used assuming a radix point at 1.0E6.  This is
-//  critical for computation of the higher order power terms (e.g. vsense^5)
-//  so that integer saturation is prevented.
+// VSENSE1_QNUM_RAW:
+//  The VSENSE input treated with an input scaling of 2^12 so that its value
+//  spans 0-1.  This value is up-scaled for internal calculation based on
+//  VSENSE1_QNUM_CALC.
 //  
-// VSENSE calculation input multiplier:
-//  The VSENSE input is up-scaled for resolution on internal 
+// VSENSE1_QNUM_CALC:
+//  The servo position command is up-scaled for resolution on internal 
 //  calculation.  This is critical for maintained accuracy through the power
 //  terms (e.g. vsense^5) of the polynomial equation.
 //
-// VSENSE calculation output divisor:
-//  The output is down-scaled to remove the input scaling, and get the result 
-//  term to the required range (i.e. 16-bit signed integer).
+// VSENSE*_DIV:
+//  The output of the polynomial equation has a scaling based to the 
+//  coefficient scaling (i.e. 1E4).  The output is  down-scaled to remove the 
+//  input scaling, and get the result term to the required units 
+//  (i.e. 1E4 / 1E2 = 1E2).
 //
 // -----------------------------------------------------------------------------
 //
-// Dynamic Range:
-//  With a VSENSE input value of [0:4095], the calculation scaled value spans
-//  [0:4095000].  With a radix point at 1.0E6, taking this value to the 5th 
-//  degree yields a result in the range [0:1,151,514,817], which is within a
-//  32-bit integer storage size.
-//
-//  With coefficient values having a storage size of int32_t
-//  (i.e. [-2.15E9:2.15E9]) the maximum un-scaled polynomial result achievable
-//  (with a 5th degree polynomial) is approximately [-3.27E18:3.27E18], which
-//  is within a int64_t storage size.
-//
 #define VSENSE1_QNUM_RAW       12U
 #define VSENSE1_QNUM_CALC      30U
-// #define VSENSE1_QNUM_COR       15U
-#define VSENSE1_DIV       100U
+#define VSENSE1_DIV           100U
 
 #define VSENSE2_QNUM_RAW       12U
 #define VSENSE2_QNUM_CALC      30U
-// #define VSENSE2_QNUM_COR       15U
-#define VSENSE2_DIV       100U
+#define VSENSE2_DIV           100U
 
 // *****************************************************************************
 // ************************** Global Variable Definitions **********************

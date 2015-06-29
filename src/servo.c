@@ -33,7 +33,6 @@
 //
 // - Coefficient scale      = 1E8 - ( i.e. LSB = 0.01  us/rad^x ).
 // - PWM input scale        = 1E3 - ( i.e. LSB = 0.001 rad      ).
-// - PWM calculation scale  = 1E9 - ( i.e. LSB = 1.0   nano-rad ).
 // - PWM output scale       = 1E6 - ( i.e. LSB = 1.0   us       ).
 //
 // Rationale:
@@ -42,41 +41,33 @@
 //  execution time of a floating-point implementation exceeds that available
 //  for the calculation resolution required (i.e. double-precision).
 //
+//  Additionally, base2 fixed-point math is used rather than base10 as 
+//  64-bit division is required and the time required for a base10 
+//  implementation (i.e. integer division rather than bit-shift) exceeds
+//  the processing time available.
+//
 // -----------------------------------------------------------------------------
 //
-// Coefficient scale:
-//  Input polynomial coefficients scaling is expected to be 1E8.
-//
-// PWM input scale:
-//  Input servo position command scaling is expected to be 1E3.
-//  
-// PWM calculation scale
+// SERVO_QNUM_CALC:
 //  The servo position command is up-scaled for resolution on internal 
 //  calculation.  This is critical for maintained accuracy through the power
 //  terms (e.g. pos^5) of the polynomial equation.
 //
-// PWM output scale:
+// SERVO_PWM_DIV:
 //  The output of the polynomial equation has a scaling based to the 
-//  coefficients and variable scaling (i.e. 1E8 * 1E9).  The output is 
-//  down-scaled to remove the input scaling, and get the result term to the 
-//  required units (i.e. micro-seconds, 1E6).
+//  coefficient scaling (i.e. 1E8).  The output is  down-scaled to remove the 
+//  input scaling, and get the result term to the required units 
+//  (i.e. 1E8 / 1E6 = 1E2).
 //
 // -----------------------------------------------------------------------------
 //
-// Dynamic Range:
-//  With a PWM input dynamic range of [-1.000:1.000] radians, the
-//  calculation scaled value spans [-1E9:1E9].  With coefficient values 
-//  having a storage size of int32_t (i.e. [-2.15E9:2.15E9]) the maximum
-//  polynomial result achievable (with a 5th degree polynomial) is 
-//  approximately [-1.2E19:1.2E19].  This value is just outside the 
-//  storage size for int64_t, but is used as it yields a significant
-//  calculation resolution and risk of overflow is essentially
-//  non-existent.
-
-
-// The result of the polynomial equation needs to be divided to the expected scale (i.e. us)
-#define SERVO_PWM_DIV       100U
 #define SERVO_QNUM_CALC      30U
+#define SERVO_PWM_OUT_DIV   100U
+
+// Values for scaling the PWM input to Q30 representation.
+#define SERVO_PWM_IN_SHIFT1       21U
+#define SERVO_PWM_IN_DIV        1000U
+#define SERVO_PWM_IN_SHIFT2        9U
 
 // *****************************************************************************
 // ************************** Global Variable Definitions **********************
@@ -92,6 +83,10 @@ static uint16_t servo_act_pwm  = 1500;  // Default to 1500us pulse.
 
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
+// *****************************************************************************
+
+// *****************************************************************************
+// ************************** Global Functions *********************************
 // *****************************************************************************
 void ServoService ( void )
 {
@@ -131,9 +126,9 @@ void ServoService ( void )
         CfgPWMCoeffGet( &servo_coeff[ 0 ] );
         
         // Note: Implementation defined behavior.  Shift operators retain the sign.
-        servo_cmd_pos_in = ((int32_t) servo_cmd_pos) << 21; // up-scale to maximize storage in int32_t.
-        servo_cmd_pos_in = servo_cmd_pos_in / 1000;         // remove base_10 scaling.
-        servo_cmd_pos_in = servo_cmd_pos_in << 9;           // up-scale to Q30 representation.
+        servo_cmd_pos_in = ((int32_t) servo_cmd_pos) << SERVO_PWM_IN_SHIFT1;    // up-scale to maximize storage in int32_t.
+        servo_cmd_pos_in = servo_cmd_pos_in / SERVO_PWM_IN_DIV;                 // remove base_10 scaling.
+        servo_cmd_pos_in = servo_cmd_pos_in << SERVO_PWM_IN_SHIFT2;             // up-scale to Q30 representation.
         
         // Perform correction of position commanded value.
         servo_act_pwm_i32 = UtilPoly32( servo_cmd_pos_in,
@@ -142,7 +137,7 @@ void ServoService ( void )
                                         CFG_PWM_COEFF_LEN );
         
         // Down-scale and typecast value back to integer type (micro-sec LSB).
-        servo_act_pwm = (uint16_t) ( servo_act_pwm_i32 / SERVO_PWM_DIV );
+        servo_act_pwm = (uint16_t) ( servo_act_pwm_i32 / SERVO_PWM_OUT_DIV );
     }
     else
     {
@@ -162,10 +157,6 @@ void ServoService ( void )
     // Send the CAN message.
     CANTxSet ( CAN_TX_MSG_SERVO_STATUS, servo_status_msg.data_u16 );
 }
-
-// *****************************************************************************
-// ************************** Global Functions *********************************
-// *****************************************************************************
 
 // *****************************************************************************
 // ************************** Static Functions *********************************
