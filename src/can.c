@@ -51,6 +51,9 @@ void CANInit ( void )
     // are only applicable to the node.
     node_id = CfgNodeIdGet();
     
+    // Configure I/O for CAN peripheral operation.
+    //
+    ANSELAbits.ANSA4  = 0;          // Configure pin RP20 as digital.
     RPINR26bits.C1RXR = 0b0010100;  // Assign C1RX peripheral pin to RP20.
     RPOR1bits.RP36R   = 0b001110;   // Assign C1TX peripheral pint to RP36.
     
