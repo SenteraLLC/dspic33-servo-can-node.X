@@ -1,10 +1,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// @file
-/// @brief Servo management.
+/// @brief Oscillator (OSC) driver. 
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SERVO_H_
-#define	SERVO_H_
+#ifndef OSC_H_
+#define	OSC_H_
 
 // *****************************************************************************
 // ************************** System Include Files *****************************
@@ -32,8 +32,11 @@
 // *****************************************************************************
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief  Control the servo and annunciate operation on CAN.
+/// @brief  Initialize OSC hardware.
+///
+/// @note   The function waits for the PLL to lock before exiting.  The PLL 
+///         lock time (Tlock) is a maximum of 3.1ms (see datasheet).
 ////////////////////////////////////////////////////////////////////////////////
-void ServoService ( void );
+void OSCInit ( void );
 
-#endif	// SERVO_H_
+#endif	// OSC_H_

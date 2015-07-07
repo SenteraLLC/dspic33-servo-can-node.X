@@ -1,24 +1,16 @@
-
 ////////////////////////////////////////////////////////////////////////////////
-///
-/// @file   $FILE$
-/// @author $AUTHOR$
-/// @date   $DATE$
-/// @brief  ???  
-///
+/// @file
+/// @brief Reset condition management.
 ////////////////////////////////////////////////////////////////////////////////
 
 // *****************************************************************************
 // ************************** System Include Files *****************************
 // *****************************************************************************
-#include <xc.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 // *****************************************************************************
 // ************************** User Include Files *******************************
 // *****************************************************************************
+
 #include "rst.h"
 #include "can.h"
 
@@ -43,20 +35,35 @@
 //  bit  1 - BOR: Brown-out Reset Flag bit
 //  bit  0 - POR: Power-on Reset Flag bit
 //
-#define RST_MASK            0xC2D3
-#define RST_MASK_POR        0x0001
-#define RST_MASK_BOR        0x0002
-#define RST_MASK_SWR        0x0040
-#define RST_MASK_SW_FAULT   0xC290
+#define RST_MASK            0xC2D3  ///< Reset conditions (register RCON) mask.
+#define RST_MASK_POR        0x0001  ///< Power-on Reset (register RCON) mask.
+#define RST_MASK_BOR        0x0002  ///< Brown-out Reset (register RCON) mask.
+#define RST_MASK_SWR        0x0040  ///< Software Reset expected (register RCON) mask.
+#define RST_MASK_SW_FAULT   0xC290  ///< Software Reset fault (register RCON) mask.
+
+/// List of reset conditions.
+typedef enum
+{
+    RST_COND_UNUSED,    ///< Unused/invalid Reset condition.
+    
+    RST_COND_POR,       ///< Power-on Reset condition.
+    RST_COND_BOR,       ///< Brown-out Reset condition.
+    RST_COND_SWR,       ///< Software Reset (expected) condition.
+    RST_COND_SW_FAULT   ///< Software Reset (fault) condition.
+    
+} RST_COND_E;
 
 // *****************************************************************************
-// ************************** Global Variable Definitions **********************
+// ************************** Definitions **************************************
 // *****************************************************************************
 
-// *****************************************************************************
-// ************************** File-Scope Variable Definitions ******************
-// *****************************************************************************
-static uint16_t rst_cond; 
+/// Condition which caused the reset.
+static RST_COND_E rst_cond;
+
+/// @brief  Detail into reset conditions.
+///
+/// @note   The value is a copy of hardware register 'RCON' masked with
+///         'Reset conditions mask', read during startup.
 static uint16_t rst_detail; 
 
 // *****************************************************************************
@@ -66,6 +73,7 @@ static uint16_t rst_detail;
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
+
 void RSTStartup ( void )
 {
     // Update the reset detail with the applicable bits from the Reset
@@ -87,28 +95,28 @@ void RSTStartup ( void )
     //
     if( ( rst_detail & RST_MASK_POR ) != 0 )
     {
-        rst_cond = 1U;
+        rst_cond = RST_COND_POR;
     }
     else
     if( ( rst_detail & RST_MASK_BOR ) != 0 )
     {
-        rst_cond = 2U;
+        rst_cond = RST_COND_BOR;
     }
     else
     if( ( rst_detail & RST_MASK_SWR ) != 0 )
     {
-        rst_cond = 3U;
+        rst_cond = RST_COND_SWR;
     }
     else
     if( ( rst_detail & RST_MASK_SW_FAULT ) != 0 )
     {
-        rst_cond = 4U;
+        rst_cond = RST_COND_SW_FAULT;
     }
     else
     {
         // Note: else-clause included for completeness.  All processor resets
         // should result in a reset condition being identified.
-        rst_cond = 0U;
+        rst_cond = RST_COND_UNUSED;
     }
 }
 
@@ -117,7 +125,7 @@ void RSTService ( void )
     CAN_TX_NODE_STATUS_U node_status_msg;
     
     // Construct the Node Status CAN message.
-    node_status_msg.reset_condition = rst_cond;
+    node_status_msg.reset_condition = (uint16_t) rst_cond;
     node_status_msg.reset_detail    = rst_detail;
     
     // Send the Node Status message.

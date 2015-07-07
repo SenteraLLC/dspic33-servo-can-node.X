@@ -1,23 +1,16 @@
 ////////////////////////////////////////////////////////////////////////////////
-///
-/// @file   $FILE$
-/// @author $AUTHOR$
-/// @date   $DATE$
-/// @brief  ??? 
-///
+/// @file
+/// @brief VSENSE signal management.
 ////////////////////////////////////////////////////////////////////////////////
 
 // *****************************************************************************
 // ************************** System Include Files *****************************
 // *****************************************************************************
-#include <xc.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 // *****************************************************************************
 // ************************** User Include Files *******************************
 // *****************************************************************************
+
 #include "vsense.h"
 #include "adc.h"
 #include "can.h"
@@ -65,13 +58,13 @@
 //
 // -----------------------------------------------------------------------------
 //
-#define VSENSE1_QNUM_RAW       12U
-#define VSENSE1_QNUM_CALC      30U
-#define VSENSE1_DIV           100U
+#define VSENSE1_QNUM_RAW       12U  ///< VSENSE1 input Q-number.
+#define VSENSE1_QNUM_CALC      30U  ///< VSENSE1 polynomial calculation Q-number.
+#define VSENSE1_DIV           100U  ///< VSENSE1 post-calculation division factor.
 
-#define VSENSE2_QNUM_RAW       12U
-#define VSENSE2_QNUM_CALC      30U
-#define VSENSE2_DIV           100U
+#define VSENSE2_QNUM_RAW       12U  ///< VSENSE2 input Q-number.
+#define VSENSE2_QNUM_CALC      30U  ///< VSENSE2 polynomial calculation Q-number.
+#define VSENSE2_DIV           100U  ///< VSENSE2 post-calculation division factor.
 
 // *****************************************************************************
 // ************************** Global Variable Definitions **********************
@@ -88,6 +81,7 @@
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
+
 void VsenseService( void )
 {
     CAN_TX_VSENSE_DATA_U vsense_msg;
@@ -104,13 +98,16 @@ void VsenseService( void )
     int16_t  vsense2_cor;
     int32_t  vsense2_coeff[ CFG_VSENSE2_COEFF_LEN ];
     
-    // Get vsense signal raw values.
-    vsense1_raw = ADCGet( ADC_AIN2 );
-    vsense2_raw = ADCGet( ADC_AIN3 );
+    
+    ////////////////////////////////////////////////////////////////////////////
+    // VSENSE1 Calibration Correction
+    ////////////////////////////////////////////////////////////////////////////
+    
+    // Get vsense signal raw value.
+    vsense1_raw = ADCGet( ADC_VSENSE1 );
     
     // Get vsense polynomial coefficient correction values.
     CfgVsense1CoeffGet( &vsense1_coeff[ 0 ] );
-    CfgVsense2CoeffGet( &vsense2_coeff[ 0 ] );
     
     // Scale VSENSE1 by the calculation factor.
     vsense1_in = ((int32_t) vsense1_raw) << ( VSENSE1_QNUM_CALC - VSENSE1_QNUM_RAW );
@@ -122,8 +119,18 @@ void VsenseService( void )
                                   CFG_VSENSE1_COEFF_LEN );
 
     // Down-scale the VSENSE1 result to the correction factors Q-number.
-    // vsense1_cor = (int16_t) ( vsense1_cor_i32 >> ( VSENSE1_QNUM_CALC - VSENSE1_QNUM_COR ) );
     vsense1_cor = (int16_t) ( vsense1_cor_i32 / VSENSE1_DIV );
+    
+    
+    ////////////////////////////////////////////////////////////////////////////
+    // VSENSE2 Calibration Correction
+    ////////////////////////////////////////////////////////////////////////////
+    
+    // Get vsense signal raw value.
+    vsense2_raw = ADCGet( ADC_VSENSE2 );
+    
+    // Get vsense polynomial coefficient correction values.
+    CfgVsense2CoeffGet( &vsense2_coeff[ 0 ] );
     
     // Scale VSENSE12 by the calculation factor.
     vsense2_in = ((int32_t) vsense2_raw) << ( VSENSE2_QNUM_CALC - VSENSE2_QNUM_RAW );
@@ -135,9 +142,12 @@ void VsenseService( void )
                                   CFG_VSENSE2_COEFF_LEN );
 
     // Down-scale the VSENSE2 result to the correction factors Q-number.
-    // vsense2_cor = (int16_t) ( vsense2_cor_i32 >> ( VSENSE2_QNUM_CALC - VSENSE2_QNUM_COR ) );
     vsense2_cor = (int16_t) ( vsense2_cor_i32 / VSENSE2_DIV );
     
+    
+    ////////////////////////////////////////////////////////////////////////////
+    // VSENSE Annunciation
+    ////////////////////////////////////////////////////////////////////////////
     
     // Construct the vsense CAN message.
     vsense_msg.vsense1_raw = vsense1_raw;

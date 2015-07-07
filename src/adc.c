@@ -1,23 +1,16 @@
 ////////////////////////////////////////////////////////////////////////////////
-///
-/// @file   $FILE$
-/// @author $AUTHOR$
-/// @date   $DATE$
-/// @brief  Source code file for defining hardware operation.   
-///
+/// @file
+/// @brief Analog to Digital Converter (ADC) driver. 
 ////////////////////////////////////////////////////////////////////////////////
 
 // *****************************************************************************
 // ************************** System Include Files *****************************
 // *****************************************************************************
-#include <xc.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 // *****************************************************************************
 // ************************** User Include Files *******************************
 // *****************************************************************************
+
 #include "adc.h"
 
 // *****************************************************************************
@@ -25,12 +18,10 @@
 // *****************************************************************************
 
 // *****************************************************************************
-// ************************** Global Variable Definitions **********************
+// ************************** Definitions **************************************
 // *****************************************************************************
 
-// *****************************************************************************
-// ************************** File-Scope Variable Definitions ******************
-// *****************************************************************************
+/// ADC values refreshed during service routine.
 static uint16_t adc_val[ ADC_AIN_MAX ];
 
 // *****************************************************************************
@@ -40,9 +31,14 @@ static uint16_t adc_val[ ADC_AIN_MAX ];
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
+
 void ADCInit ( void )
 {
-    AD1CON1bits.ADON    = 0;        // Turn ADC1 off - required for updating several ADC registers. Should already be 0 from reset value, but included for robustness.
+    // Turn ADC1 off - required for updating several ADC registers. Should 
+    // already be 0 from reset value, but included for robustness.
+    //    
+    AD1CON1bits.ADON    = 0;
+    
     AD1CON1bits.ADSIDL  = 0;        // N/A, set to Hw default.  Idle mode not entered.
     AD1CON1bits.ADDMABM = 0;        // N/A, set to Hw default.  DMA not used.
     AD1CON1bits.AD12B   = 1;        // 12-bit, 1-channel (CH0) ADC operation.
@@ -52,7 +48,7 @@ void ADCInit ( void )
     AD1CON1bits.SIMSAM  = 0;        // Sample CH0 inputs in sequence.
     AD1CON1bits.ASAM    = 0;        // Manual sampling - sampling begins when SAMP bit is set.
 
-    AD1CON2bits.VCFG    = 0b000;    // N/A, set to Hw default. AVdd always used for high reference, AVss always used for low reference.
+    AD1CON2bits.VCFG    = 0b000;    // N/A, set to Hw default. AVdd used for high reference, AVss used for low.
     AD1CON2bits.CSCNA   = 0;        // Inputs are not scanned.
     AD1CON2bits.CHPS    = 0;        // N/A, set to Hw default.  Single channel (CH0) only possible in 12-bit mode.
     AD1CON2bits.BUFS    = 0;        // N/A, set to Hw default.  Buffer fill status not valid since BUFM = 1.
@@ -108,6 +104,7 @@ void ADCInit ( void )
 
 void ADCService ( void )
 {
+    // Channel selection register value for ADC inputs.
     static const uint16_t ain_ch0sa_val[ ADC_AIN_MAX ] = 
     {
         2,
@@ -121,7 +118,7 @@ void ADCService ( void )
          ain_idx < ADC_AIN_MAX;
          ain_idx++ )
     {
-        // Select channel 0 positive input for the ADC signal.
+        // Select ADC signal for subsequent conversion.
         AD1CHS0bits.CH0SA = ain_ch0sa_val[ ain_idx ];
         
         // Clear identification of the conversion being done.

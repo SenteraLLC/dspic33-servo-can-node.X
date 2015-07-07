@@ -1,23 +1,16 @@
 ////////////////////////////////////////////////////////////////////////////////
-///
-/// @file   $FILE$
-/// @author $AUTHOR$
-/// @date   $DATE$
-/// @brief  Source code file for defining hardware operation.   
-///
+/// @file
+/// @brief External current/power monitor (INA219) driver. 
 ////////////////////////////////////////////////////////////////////////////////
 
 // *****************************************************************************
 // ************************** System Include Files *****************************
 // *****************************************************************************
-#include <xc.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 // *****************************************************************************
 // ************************** User Include Files *******************************
 // *****************************************************************************
+
 #include "ina219.h"
 #include "i2c.h"
 
@@ -25,26 +18,25 @@
 // ************************** Defines ******************************************
 // *****************************************************************************
 
-// INA219 slave address.
-//
-// Note: INA219 address lines A1 and A0 are electrically grounded.  This causes
-// the INA219 slave address to be 0b100_0000.
-//
+/// INA219 slave address.
+///
+/// @note   INA219 address lines A1 and A0 are electrically grounded.  This 
+///         causes the INA219 slave address to be 0b100_0000.
 #define INA219_SADDR  0x40U
 
-#define INA219_REG_CFG          0x00     // Configuration Register Address
-#define INA219_REG_BUS_VOLT     0x02     // Bus Voltage Register Address
-#define INA219_REG_CURRENT      0x04     // Current Register Address
-#define INA219_REG_CAL          0x05     // Calibration Register Address
+#define INA219_REG_CFG          0x00     ///< Configuration Register Address
+#define INA219_REG_BUS_VOLT     0x02     ///< Bus Voltage Register Address
+#define INA219_REG_CURRENT      0x04     ///< Current Register Address
+#define INA219_REG_CAL          0x05     ///< Calibration Register Address
 
 // *****************************************************************************
-// ************************** Global Variable Definitions **********************
+// ************************** Definitions **************************************
 // *****************************************************************************
 
-// *****************************************************************************
-// ************************** File-Scope Variable Definitions ******************
-// *****************************************************************************
+/// INA219 measured current.
 static uint16_t ina219_amp;
+
+/// INA219 measured voltage.
 static uint16_t ina219_volt;
 
 // *****************************************************************************
@@ -54,6 +46,7 @@ static uint16_t ina219_volt;
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
+
 void INA219Init ( void )
 {
     // INA219 Configuration register data definition:

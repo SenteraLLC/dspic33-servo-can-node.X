@@ -1,15 +1,29 @@
 ////////////////////////////////////////////////////////////////////////////////
-///
-/// @file   $FILE$
-/// @author $AUTHOR$
-/// @date   $DATE$
-/// @brief   
-///
+/// @file   
+/// @brief  Controller Area Network (CAN) driver. 
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef CAN_H_
 #define	CAN_H_
 
+// *****************************************************************************
+// ************************** System Include Files *****************************
+// *****************************************************************************
+
+#include <xc.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+// *****************************************************************************
+// ************************** User Include Files *******************************
+// *****************************************************************************
+
+// *****************************************************************************
+// ************************** Defines ******************************************
+// *****************************************************************************
+
+/// List of transmitted messages.
 typedef enum
 {
     CAN_TX_MSG_SERVO_STATUS,
@@ -23,6 +37,7 @@ typedef enum
     
 } CAN_TX_MSG_TYPE_E;
 
+/// List of received messages.
 typedef enum
 {
     CAN_RX_MSG_SERVO_CMD,
@@ -36,6 +51,8 @@ typedef enum
 //
 // TRANSMIT MESSAGES -----------------------------------------------------------
 //
+
+/// Payload content of Servo Status message.
 typedef union
 {
     uint16_t data_u16[ 4 ];
@@ -50,6 +67,7 @@ typedef union
     
 } CAN_TX_SERVO_STATUS_U;
 
+/// Payload content of VSENSE Data message.
 typedef union
 {
     uint16_t data_u16[ 4 ];
@@ -64,6 +82,7 @@ typedef union
     
 } CAN_TX_VSENSE_DATA_U;
 
+/// Payload content of Node Status message.
 typedef union
 {
     uint16_t data_u16[ 4 ];
@@ -76,6 +95,7 @@ typedef union
     
 } CAN_TX_NODE_STATUS_U;
 
+/// Payload content of Node Version message.
 typedef union
 {
     uint16_t data_u16[ 4 ];
@@ -91,6 +111,7 @@ typedef union
     
 } CAN_TX_NODE_VER_U;
 
+/// Payload content of Configuration Write Response message.
 typedef union
 {
     uint16_t data_u16[ 4 ];
@@ -104,6 +125,7 @@ typedef union
     
 } CAN_TX_WRITE_RESP_U;
 
+/// Payload content of Configuration Read Response message.
 typedef union
 {
     uint16_t data_u16[ 4 ];
@@ -126,6 +148,7 @@ typedef union
 // RECEIVE MESSAGES -----------------------------------------------------------
 //
 
+/// Payload content of Servo Command message.
 typedef union
 {
     uint16_t data_u16[ 4 ];
@@ -137,8 +160,9 @@ typedef union
         int16_t  cmd_pos;
     };
     
-} CAN_TX_SERVO_CMD_U;
+} CAN_RX_SERVO_CMD_U;
 
+/// Payload content of Configuration Write Request message.
 typedef union
 {
     uint16_t data_u16[ 4 ];
@@ -155,8 +179,9 @@ typedef union
 
     };
     
-} CAN_TX_WRITE_REQ_U;
+} CAN_RX_WRITE_REQ_U;
 
+/// Payload content of Configuration Read Request message.
 typedef union
 {
     uint16_t data_u16[ 4 ];
@@ -167,31 +192,41 @@ typedef union
 
     };
     
-} CAN_TX_READ_REQ_U;
+} CAN_RX_READ_REQ_U;
 
+// *****************************************************************************
+// ************************** Declarations *************************************
+// *****************************************************************************
 
-
-
-
+// *****************************************************************************
+// ************************** Function Prototypes ******************************
+// *****************************************************************************
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief 
-/// @param 
-/// @return
+/// @brief  Initialize CAN hardware.
 ////////////////////////////////////////////////////////////////////////////////
 void CANInit ( void );
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief 
-/// @param 
-/// @return
+/// @brief  Queue CAN message for transmission.
+///
+/// @param  tx_msg_type
+///             Type of message transmitted.
+/// @param  payload
+///             Payload of message to transmit.
 ////////////////////////////////////////////////////////////////////////////////
 void CANTxSet ( CAN_TX_MSG_TYPE_E tx_msg_type, const uint16_t payload[ 4 ] );
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief 
-/// @param 
-/// @return true - returned data is value.  false - returned data is invalid.
+/// @brief  Read received CAN message.
+///
+/// @param  rx_msg_type
+///             Type of message received.
+/// @param  payload
+///             Buffer for storing the received message's payload.
+///
+/// @return true  - returned data is value.  
+///         false - returned data is invalid.
 ////////////////////////////////////////////////////////////////////////////////
 bool CANRxGet ( CAN_RX_MSG_TYPE_E rx_msg_type, uint16_t payload[ 4 ] );
 

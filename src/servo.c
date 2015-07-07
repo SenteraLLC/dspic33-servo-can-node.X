@@ -1,23 +1,16 @@
 ////////////////////////////////////////////////////////////////////////////////
-///
-/// @file   $FILE$
-/// @author $AUTHOR$
-/// @date   $DATE$
-/// @brief  ??? 
-///
+/// @file
+/// @brief Servo management.
 ////////////////////////////////////////////////////////////////////////////////
 
 // *****************************************************************************
 // ************************** System Include Files *****************************
 // *****************************************************************************
-#include <xc.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 // *****************************************************************************
 // ************************** User Include Files *******************************
 // *****************************************************************************
+
 #include "servo.h"
 #include "ina219.h"
 #include "can.h"
@@ -54,32 +47,52 @@
 //  terms (e.g. pos^5) of the polynomial equation.
 //
 // SERVO_PWM_DIV:
-//  The output of the polynomial equation has a scaling based to the 
+//  The output of the polynomial equation has a scaling based on the 
 //  coefficient scaling (i.e. 1E8).  The output is  down-scaled to remove the 
 //  input scaling, and get the result term to the required units 
 //  (i.e. 1E8 / 1E6 = 1E2).
 //
 // -----------------------------------------------------------------------------
 //
-#define SERVO_QNUM_CALC      30U
-#define SERVO_PWM_OUT_DIV   100U
+#define SERVO_QNUM_CALC      30U        ///< Polynomial calculation Q-number.
+#define SERVO_PWM_OUT_DIV   100U        ///< Post-calculation division factor.
 
 // Values for scaling the PWM input to Q30 representation.
-#define SERVO_PWM_IN_SHIFT1       21U
-#define SERVO_PWM_IN_DIV        1000U
-#define SERVO_PWM_IN_SHIFT2        9U
+#define SERVO_PWM_IN_SHIFT1       21U   ///< Input position 1st l-shift (for Q30 scaling).
+#define SERVO_PWM_IN_DIV        1000U   ///< Input position division (for Q30 scaling).
+#define SERVO_PWM_IN_SHIFT2        9U   ///< Input position 2nd l-shift (for Q30 scaling).
+
+/// List of servo control/command types.
+typedef enum
+{
+    SERVO_CTRL_PWM,     ///< Servo controlled with PWM command.
+    SERVO_CTRL_POS      ///< Servo controlled with position command.
+    
+} SERVO_CTRL_TYPE_E;
 
 // *****************************************************************************
-// ************************** Global Variable Definitions **********************
+// ************************** Definitions **************************************
 // *****************************************************************************
 
-// *****************************************************************************
-// ************************** File-Scope Variable Definitions ******************
-// *****************************************************************************
-static uint16_t servo_cmd_type = 0;     // Default to PWM command type.
-static uint16_t servo_cmd_pwm  = 1500;  // Default to 1500us command pulse.
-static int16_t  servo_cmd_pos  = 0;     // Default to 0.0 radian position.
-static uint16_t servo_act_pwm  = 1500;  // Default to 1500us pulse.
+/// The command type used to control the servo.
+///
+/// @note   Default to PWM control.
+static SERVO_CTRL_TYPE_E servo_cmd_type = SERVO_CTRL_PWM;
+
+/// The PWM commanded value for servo control.
+///
+/// @note   Default to 1500us - i.e. neutral position.
+static uint16_t servo_cmd_pwm = 1500;
+
+/// The position commanded value for servo control.
+///
+/// @note   Default to 0.0 radians.
+static int16_t servo_cmd_pos = 0;
+
+/// The actual PWM value applied to the servo.
+///
+/// @note   Updated on execution of module service function.
+static uint16_t servo_act_pwm;
 
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
@@ -88,13 +101,11 @@ static uint16_t servo_act_pwm  = 1500;  // Default to 1500us pulse.
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
+
 void ServoService ( void )
 {
-    CAN_TX_SERVO_CMD_U    servo_cmd_msg;
+    CAN_RX_SERVO_CMD_U    servo_cmd_msg;
     CAN_TX_SERVO_STATUS_U servo_status_msg;
-    
-    uint16_t servo_amperage;
-    uint16_t servo_voltage;
     
     int32_t servo_coeff[ CFG_PWM_COEFF_LEN ];
     
@@ -103,12 +114,8 @@ void ServoService ( void )
     
     bool payload_valid;
     
-    // Get servo amperage and voltage.
-    servo_amperage = INA219AmpGet();
-    servo_voltage  = INA219VoltGet();
-    
     // Get the Servo Command CAN data.
-    payload_valid =  CANRxGet ( CAN_RX_MSG_SERVO_CMD, servo_cmd_msg.data_u16 );
+    payload_valid = CANRxGet( CAN_RX_MSG_SERVO_CMD, servo_cmd_msg.data_u16 );
     
     // Servo Command CAN message received ?
     if( payload_valid == true )
@@ -120,7 +127,7 @@ void ServoService ( void )
     }
     
     // Position command is being used for control ?
-    if( servo_cmd_type == 1 )
+    if( servo_cmd_type == SERVO_CTRL_POS )
     {
         // Get servo polynomial coefficient correction values.
         CfgPWMCoeffGet( &servo_coeff[ 0 ] );
@@ -147,15 +154,15 @@ void ServoService ( void )
     
     // Update PWM duty cycle with that determined.
     PWMDutySet( servo_act_pwm );
-
+    
     // Construct the Servo Status CAN message.
     servo_status_msg.cmd_type_echo = servo_cmd_msg.cmd_type;
     servo_status_msg.pwm_act       = servo_act_pwm;
-    servo_status_msg.servo_voltage = servo_voltage;
-    servo_status_msg.servo_current = servo_amperage;
+    servo_status_msg.servo_voltage = INA219VoltGet();
+    servo_status_msg.servo_current = INA219AmpGet();
     
     // Send the CAN message.
-    CANTxSet ( CAN_TX_MSG_SERVO_STATUS, servo_status_msg.data_u16 );
+    CANTxSet( CAN_TX_MSG_SERVO_STATUS, servo_status_msg.data_u16 );
 }
 
 // *****************************************************************************

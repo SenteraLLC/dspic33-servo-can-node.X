@@ -1,25 +1,18 @@
 ////////////////////////////////////////////////////////////////////////////////
-///
-/// @file   $FILE$
-/// @author $AUTHOR$
-/// @date   $DATE$
-/// @brief  ???   
-///
+/// @file
+/// @brief Utility functions.
 ////////////////////////////////////////////////////////////////////////////////
 
 // *****************************************************************************
 // ************************** System Include Files *****************************
 // *****************************************************************************
-#include <xc.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <math.h>
 
 // *****************************************************************************
 // ************************** User Include Files *******************************
 // *****************************************************************************
-#include "hw.h"
+
+#include "util.h"
+#include "tmr.h"
 
 // *****************************************************************************
 // ************************** Defines ******************************************
@@ -36,11 +29,13 @@
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
 // *****************************************************************************
+
 static int32_t UtilPow( int32_t var_in, uint8_t calc_qnum, uint8_t power );
 
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
+
 int32_t UtilPoly32( int32_t var_in,
                     uint8_t calc_qnum,
                     int32_t coeff[], 
@@ -71,8 +66,6 @@ int32_t UtilPoly32( int32_t var_in,
     return result;
 }
 
-// Note: internal scaling by 10 is performed; input parameter 'ms_delay'
-// should no exceed ~6000.
 void UtilDelay( uint16_t ms_delay )
 {
     uint16_t start_time;
@@ -83,7 +76,7 @@ void UtilDelay( uint16_t ms_delay )
     p1ms_delay = ms_delay * 10;
     
     // Initialize timers for identifying delay time.
-    start_time = HwTMRp1msGet();
+    start_time = TMR2p1msGet();
     psnt_time  = start_time;
     
     // Wait for the delay time to elapse before exiting the function.
@@ -94,13 +87,27 @@ void UtilDelay( uint16_t ms_delay )
     //
     while ( psnt_time - start_time <= p1ms_delay )
     {
-        psnt_time = HwTMRp1msGet();
+        psnt_time = TMR2p1msGet();
     }
 }
 
 // *****************************************************************************
 // ************************** Static Functions *********************************
 // *****************************************************************************
+
+////////////////////////////////////////////////////////////////////////////////
+/// @brief  Power term calculation of 32-bit variable.
+///
+/// @param  var_in
+///             The input variable.
+/// @param  calc_qnum
+///             The Q-number (i.e. base-2 radix point) of the input variable.
+/// @param  power
+///             The power (i.e. exponent) of the calculation.
+///
+/// @return The result of the power computation.  Result is scaled by
+///         same value as input 'var_in'.
+////////////////////////////////////////////////////////////////////////////////
 static int32_t UtilPow( int32_t var_in, uint8_t calc_qnum, uint8_t power )
 {    
     int32_t result;

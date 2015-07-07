@@ -1,24 +1,16 @@
-
 ////////////////////////////////////////////////////////////////////////////////
-///
-/// @file   $FILE$
-/// @author $AUTHOR$
-/// @date   $DATE$
-/// @brief    
-///
+/// @file
+/// @brief Configuration data management.
 ////////////////////////////////////////////////////////////////////////////////
 
 // *****************************************************************************
 // ************************** System Include Files *****************************
 // *****************************************************************************
-#include <xc.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 // *****************************************************************************
 // ************************** User Include Files *******************************
 // *****************************************************************************
+
 #include "cfg.h"
 #include "can.h"
 #include "nvm.h"
@@ -28,14 +20,15 @@
 // ************************** Defines ******************************************
 // *****************************************************************************
 
-// The Program Memory page is 2048 bytes (i.e. 512 program double-words) in
-// length.  The upper word of the 512 program double-words is not used for
-// constant data storage (i.e. __pack_upper_byte compiler option not used).
-//
-// The structure is defined as the size for one page (i.e. padded 
-// with 'reserved' bytes) so that an erase operation will not inadvertently
-// erase other program components.
-//
+/// Definition of configuration data field.
+/// 
+/// @note   The Program Memory page is 2048 bytes (i.e. 512 program 
+///         double-words) in length.  The upper word of the 512 program 
+///         double-words is not used for constant data storage 
+///         (i.e. __pack_upper_byte compiler option not used).   The structure 
+///         is defined as the size for one page (i.e. padded with  'reserved' 
+///         bytes) so that an erase operation will not inadvertently erase 
+///         other program components.
 typedef union
 {
     struct
@@ -53,14 +46,13 @@ typedef union
 } CFG_DATA_U;
 
 // *****************************************************************************
-// ************************** Global Variable Definitions **********************
+// ************************** Definitions **************************************
 // *****************************************************************************
 
-// *****************************************************************************
-// ************************** File-Scope Variable Definitions ******************
-// *****************************************************************************
-
-// Align the configuration data memory allocation to a Program Memory page.
+/// Definition of configuration data.
+///
+/// @note   The configuration data memory allocation is aligned to a Program 
+///         Memory page.
 static const CFG_DATA_U __align( 1024 ) cfg_data =
 {
     {
@@ -75,12 +67,14 @@ static const CFG_DATA_U __align( 1024 ) cfg_data =
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
 // *****************************************************************************
+
 static void CfgWrite( void );
 static void CfgRead( void );
 
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
+
 void CfgService( void )
 {
     // Service a write request.
@@ -99,6 +93,7 @@ void CfgPWMCoeffGet( int32_t pwm_coeff[ CFG_PWM_COEFF_LEN ] )
 {
     uint8_t coeff_idx;
     
+    // Copy coefficients to supplied buffer.
     for ( coeff_idx = 0;
           coeff_idx < CFG_PWM_COEFF_LEN;
           coeff_idx++ )
@@ -111,6 +106,7 @@ void CfgVsense1CoeffGet( int32_t vsense1_coeff[ CFG_VSENSE1_COEFF_LEN ] )
 {
     uint8_t coeff_idx;
     
+    // Copy coefficients to supplied buffer.
     for ( coeff_idx = 0;
           coeff_idx < CFG_VSENSE1_COEFF_LEN;
           coeff_idx++ )
@@ -123,6 +119,7 @@ void CfgVsense2CoeffGet( int32_t vsense2_coeff[ CFG_VSENSE2_COEFF_LEN ] )
 {
     uint8_t coeff_idx;
     
+    // Copy coefficients to supplied buffer.
     for ( coeff_idx = 0;
           coeff_idx < CFG_VSENSE2_COEFF_LEN;
           coeff_idx++ )
@@ -136,15 +133,17 @@ void CfgVsense2CoeffGet( int32_t vsense2_coeff[ CFG_VSENSE2_COEFF_LEN ] )
 // *****************************************************************************
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief 
-/// @param 
-/// @return
+/// @brief  Service a configuration write request.
+///
+/// If a configuration write request is received, the value is updated
+/// in NVM and a configuration write response message is queued for
+/// transmission.
 ////////////////////////////////////////////////////////////////////////////////
 static void CfgWrite( void )
 {
     static CFG_DATA_U cfg_data_cpy;
     
-    CAN_TX_WRITE_REQ_U  write_req_payload;
+    CAN_RX_WRITE_REQ_U  write_req_payload;
     CAN_TX_WRITE_RESP_U write_resp_payload;
             
     bool node_id_update = false;
@@ -234,13 +233,15 @@ static void CfgWrite( void )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief 
-/// @param 
-/// @return
+/// @brief  Service a configuration read request.
+///
+/// If a configuration read request is received, the selected value is 
+/// read from NVM and populated in a configuration read response message which
+/// is queued for transmission.
 ////////////////////////////////////////////////////////////////////////////////
 static void CfgRead( void )
 {
-    CAN_TX_READ_REQ_U   read_req_payload;      
+    CAN_RX_READ_REQ_U   read_req_payload;      
     CAN_TX_READ_RESP_U  read_resp_payload;
 
     bool payload_valid;

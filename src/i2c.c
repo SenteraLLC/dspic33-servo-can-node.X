@@ -1,23 +1,16 @@
 ////////////////////////////////////////////////////////////////////////////////
-///
-/// @file   $FILE$
-/// @author $AUTHOR$
-/// @date   $DATE$
-/// @brief  ???  
-///
+/// @file   
+/// @brief  Inter-Integrated Circuit (I2C) driver.
 ////////////////////////////////////////////////////////////////////////////////
 
 // *****************************************************************************
 // ************************** System Include Files *****************************
 // *****************************************************************************
-#include <xc.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 // *****************************************************************************
 // ************************** User Include Files *******************************
 // *****************************************************************************
+
 #include "i2c.h"
 
 // *****************************************************************************
@@ -25,17 +18,16 @@
 // *****************************************************************************
 
 // *****************************************************************************
-// ************************** Global Variable Definitions **********************
+// ************************** Definitions **************************************
 // *****************************************************************************
 
-// *****************************************************************************
-// ************************** File-Scope Variable Definitions ******************
-// *****************************************************************************
+/// I2C communication error latch (i.e. not cleared).
 static bool i2c_error_latch = false;
 
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
 // *****************************************************************************
+
 static void     I2CStartSeq ( void );
 static void     I2CTxSeq    ( uint8_t tx_data );
 static uint8_t  I2CRxSeq    ( void );
@@ -44,6 +36,31 @@ static void     I2CStopSeq  ( void );
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
+
+void I2CInit( void )
+{
+    // Initialize the I2C hardware for 100KHz operation.  The hardware contains
+    // a single I2C module (i.e. I2C1).
+    //
+    // Fscl =    Fcy  / ( ( I2CxBRG + 2 ) * 2 )
+    //      =  20MHz  / ( (      98 + 2 ) * 2 )
+    //      = 100KHz
+    //
+    // Note: when the I2C1 module is enabled the state and direction pins
+    // SCL1 & SDA1 are overwritten; therefore, no pin I/O configuration
+    // (e.g. register ODCx) is needed.
+    //
+    // Note: Disabling of the I2C is performed before modifying register.  Out
+    // of reset the I2C should be disabled, so disabled is performed purely
+    // for robustness.
+    //
+    I2C1CON1bits.I2CEN = 0;     // Disable I2C1
+   
+    I2C1BRG = 98;               // Set 100 kHz clock.
+
+    I2C1CON1bits.I2CEN = 1;     // Enable I2C1.
+}
+
 void I2CWrite( uint8_t saddr, const uint8_t* data, uint8_t data_len )
 {
     uint8_t data_idx;
@@ -107,9 +124,7 @@ void I2CRead( uint8_t saddr, uint8_t* data, uint8_t data_len )
 // *****************************************************************************
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief  Read data using the I2C interface.
-/// @param 
-/// @return
+/// @brief  Start an I2C sequence.
 ////////////////////////////////////////////////////////////////////////////////
 static void I2CStartSeq ( void )
 {
@@ -121,9 +136,10 @@ static void I2CStartSeq ( void )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief  Read data using the I2C interface.
-/// @param 
-/// @return
+/// @brief  Transmit the data byte.
+///
+/// @param  tx_data
+///             Data byte to transmit.
 ////////////////////////////////////////////////////////////////////////////////
 static void I2CTxSeq ( uint8_t tx_data )
 {
@@ -152,9 +168,9 @@ static void I2CTxSeq ( uint8_t tx_data )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief  Read data using the I2C interface.
-/// @param 
-/// @return
+/// @brief  Receive a data byte.
+///
+/// @return Received data byte.
 ////////////////////////////////////////////////////////////////////////////////
 static uint8_t I2CRxSeq ( void )
 {
@@ -179,9 +195,7 @@ static uint8_t I2CRxSeq ( void )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// @brief  Read data using the I2C interface.
-/// @param 
-/// @return
+/// @brief  Stop an I2C sequence.
 ////////////////////////////////////////////////////////////////////////////////
 static void I2CStopSeq ( void )
 {

@@ -5,7 +5,6 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>inc/ina219.h</itemPath>
-      <itemPath>inc/hw.h</itemPath>
       <itemPath>inc/i2c.h</itemPath>
       <itemPath>inc/adc.h</itemPath>
       <itemPath>inc/wdt.h</itemPath>
@@ -18,6 +17,9 @@
       <itemPath>inc/vsense.h</itemPath>
       <itemPath>inc/util.h</itemPath>
       <itemPath>inc/servo.h</itemPath>
+      <itemPath>inc/tmr.h</itemPath>
+      <itemPath>inc/osc.h</itemPath>
+      <itemPath>inc/dio.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -28,7 +30,6 @@
                    projectFiles="true">
       <itemPath>src/main.c</itemPath>
       <itemPath>src/ina219.c</itemPath>
-      <itemPath>src/hw.c</itemPath>
       <itemPath>src/i2c.c</itemPath>
       <itemPath>src/adc.c</itemPath>
       <itemPath>src/wdt.c</itemPath>
@@ -41,6 +42,9 @@
       <itemPath>src/vsense.c</itemPath>
       <itemPath>src/util.c</itemPath>
       <itemPath>src/servo.c</itemPath>
+      <itemPath>src/tmr.c</itemPath>
+      <itemPath>src/osc.c</itemPath>
+      <itemPath>src/dio.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

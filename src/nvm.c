@@ -1,38 +1,26 @@
-
 ////////////////////////////////////////////////////////////////////////////////
-///
-/// @file   $FILE$
-/// @author $AUTHOR$
-/// @date   $DATE$
-/// @brief    
-///
+/// @file
+/// @brief Non-volatile Memory (NVM) driver.
 ////////////////////////////////////////////////////////////////////////////////
 
 // *****************************************************************************
 // ************************** System Include Files *****************************
 // *****************************************************************************
-#include <xc.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 // *****************************************************************************
 // ************************** User Include Files *******************************
 // *****************************************************************************
+
 #include "nvm.h"
 #include "wdt.h"
-#include "hw.h"
+#include "tmr.h"
 
 // *****************************************************************************
 // ************************** Defines ******************************************
 // *****************************************************************************
 
 // *****************************************************************************
-// ************************** Global Variable Definitions **********************
-// *****************************************************************************
-
-// *****************************************************************************
-// ************************** File-Scope Variable Definitions ******************
+// ************************** Definitions **************************************
 // *****************************************************************************
 
 // *****************************************************************************
@@ -42,6 +30,7 @@
 // *****************************************************************************
 // ************************** Global Functions *********************************
 // *****************************************************************************
+
 void NVMInit ( void )
 {
     NVMCONbits.WREN    = 1;     // Enabled program/erase operations.
@@ -73,7 +62,7 @@ bool NVMErasePage ( uint16_t table_page,
     // until the cycle completes.
     //
     WDTDisable();
-    HwTMRDisable();
+    TMR1Disable();
     __builtin_disi( 0x3FFF );
     
     // Perform unlock sequence and initiate starting the erase cycle.
@@ -94,7 +83,7 @@ bool NVMErasePage ( uint16_t table_page,
     // - timer1
     __builtin_disi( 0 );
     WDTEnable();
-    HwTMREnable();
+    TMR1Enable();
     
     // Identify an NVM erase error if the hardware indicates an improper
     // erase sequence attempted.
@@ -107,8 +96,8 @@ bool NVMErasePage ( uint16_t table_page,
 }
 
 bool NVMProgramPage ( const uint16_t src_data[],
-                            uint16_t dest_table_page, 
-                            uint16_t dest_table_offset )
+                            uint16_t table_page, 
+                            uint16_t table_offset )
 {
     uint16_t  instr_idx;
     bool      nvm_error = false;
@@ -148,8 +137,8 @@ bool NVMProgramPage ( const uint16_t src_data[],
         // multiplied by 2 since each instruction occupies two addressable
         // units within the Program Memory architecture.
         //
-        NVMADRU = dest_table_page;
-        NVMADR  = dest_table_offset + ( instr_idx * 2 );
+        NVMADRU = table_page;
+        NVMADR  = table_offset + ( instr_idx * 2 );
         
         // Load the two instructions into the latches.
         //
@@ -194,13 +183,13 @@ bool NVMProgramPage ( const uint16_t src_data[],
         // - timer1
         //
         // This is performed to maintain expected control flow through CPU stall.
-        // The CPU stalls until the erase operation is finished. The CPU will 
+        // The CPU stalls until the program operation is finished. The CPU will 
         // not execute any instructions or respond to interrupts during this time. 
         // If any interrupts occur during the programming cycle, they will remain
         // pending until the cycle completes.
         //
         WDTDisable();
-        HwTMRDisable();
+        TMR1Disable();
         __builtin_disi( 0x3FFF );
 
         // Perform unlock sequence and initiate starting the program cycle.
@@ -221,7 +210,7 @@ bool NVMProgramPage ( const uint16_t src_data[],
         // - timer1
         __builtin_disi( 0 );
         WDTEnable();
-        HwTMREnable();
+        TMR1Enable();
         
         // Identify an NVM program error if the hardware indicates an improper
         // program sequence attempted.
