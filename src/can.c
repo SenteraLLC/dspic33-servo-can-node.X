@@ -94,7 +94,7 @@ void CANInit ( void )
     // SJW               = Min( 4, Prop, PS1, PS2 ) = 3 TQ
     //
     C1CFG1bits.SJW      = 2;    // Select SJW (2 = 3 TQ).
-    C1CFG1bits.BRP      = 0;    // Select baud rate for expected Ftq.
+    C1CFG1bits.BRP      = 7;    // Select baud rate for expected Ftq.
     
     C1CFG2bits.WAKFIL   = 0;    // N/A, b/c sleep mode not used.
     C1CFG2bits.SEG2PH   = 2;    // Select phase segment 2 time (2 = 3 TQ).
@@ -244,12 +244,12 @@ void CANInit ( void )
     // Configure DMA1 for CAN1 receive operation.
     DMA1CONbits.SIZE    = 0;                                                    // Perform word transfers.
     DMA1CONbits.DIR     = 0;                                                    // Transfer from peripheral address to RAM.
-    DMA0CONbits.HALF    = 0;                                                    // Do not generate interrupt when half of data moved.
-    DMA0CONbits.NULLW   = 0;                                                    // Normal operation.
+    DMA1CONbits.HALF    = 0;                                                    // Do not generate interrupt when half of data moved.
+    DMA1CONbits.NULLW   = 0;                                                    // Normal operation.
     DMA1CONbits.AMODE   = 0b10;                                                 // Peripheral indirect addressing mode.
     DMA1CONbits.MODE    = 0b00;                                                 // Continuous Ping-Pong modes disabled.
-    DMA0REQbits.IRQSEL  = 34;                                                   // Associate the DMA channel to IRQ 34 (i.e. CAN1 Receive Data Ready)
-    DMA0CNTbits.CNT     = 7;                                                    // Perform 8 transfers.
+    DMA1REQbits.IRQSEL  = 34;                                                   // Associate the DMA channel to IRQ 34 (i.e. CAN1 Receive Data Ready)
+    DMA1CNTbits.CNT     = 7;                                                    // Perform 8 transfers.
     DMA1PAD             = (volatile unsigned int) &C1RXD;                       // Peripheral address of CAN1 transmit data register.
     DMA1STAL            = (unsigned int) &can_msg_buf;                          // Set the DMA0 start address register.    
     DMA1STAH            = 0x0000;                                               // N/A near memory accessed
