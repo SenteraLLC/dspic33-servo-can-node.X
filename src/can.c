@@ -94,7 +94,7 @@ void CANInit ( void )
     // SJW               = Min( 4, Prop, PS1, PS2 ) = 3 TQ
     //
     C1CFG1bits.SJW      = 2;    // Select SJW (2 = 3 TQ).
-    C1CFG1bits.BRP      = 7;    // Select baud rate for expected Ftq.
+    C1CFG1bits.BRP      = 0;    // Select baud rate for expected Ftq.
     
     C1CFG2bits.WAKFIL   = 0;    // N/A, b/c sleep mode not used.
     C1CFG2bits.SEG2PH   = 2;    // Select phase segment 2 time (2 = 3 TQ).
