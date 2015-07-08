@@ -424,9 +424,9 @@ static void CANTxBuildHeader ( CAN_TX_MSG_TYPE_E tx_msg_type, uint16_t msg_buf[ 
         
         struct
         {
-            uint32_t id3        : 11;   // bits 10- 0
-            uint32_t id2        : 12;   // bits 22-11
-            uint32_t id1        :  6;   // bits 28-23
+            uint32_t id_lo     :  6;   // bits  5- 0
+            uint32_t id_md     : 12;   // bits 17- 6
+            uint32_t id_hi     : 11;   // bits 28-18
         };
         
     } CAN_ID_U;
@@ -448,11 +448,11 @@ static void CANTxBuildHeader ( CAN_TX_MSG_TYPE_E tx_msg_type, uint16_t msg_buf[ 
             // Word 1.
             uint16_t ide    :  1;
             uint16_t srr    :  1;
-            uint16_t id1    : 11;
+            uint16_t sid    : 11;
             uint16_t        :  3;
 
             // Word 2.
-            uint16_t id2    : 12;
+            uint16_t eid_hi : 12;
             uint16_t        :  4;
 
             // Word 3.
@@ -461,7 +461,7 @@ static void CANTxBuildHeader ( CAN_TX_MSG_TYPE_E tx_msg_type, uint16_t msg_buf[ 
             uint16_t        :  3;
             uint16_t rb1    :  1;
             uint16_t rtr    :  1;
-            uint16_t id3    :  6; 
+            uint16_t eid_lo :  6; 
         };
         
         uint16_t data_u16[ 3 ];
@@ -588,10 +588,10 @@ static void CANTxBuildHeader ( CAN_TX_MSG_TYPE_E tx_msg_type, uint16_t msg_buf[ 
     can_id        = tx_can_data[ tx_msg_type ].can_id;
     can_id.src_id = node_id;
     
-    // Populate the header within hardware with the CAN ID.
-    tx_hw_header.id1 = can_id.id1;
-    tx_hw_header.id2 = can_id.id2;
-    tx_hw_header.id3 = can_id.id3;
+    // Populate the hardware header format with the CAN ID.
+    tx_hw_header.sid    = can_id.id_hi;
+    tx_hw_header.eid_hi = can_id.id_md;
+    tx_hw_header.eid_lo = can_id.id_lo;
     
     // Handle the special case of Configuration Read Response which has a
     // variable length.
