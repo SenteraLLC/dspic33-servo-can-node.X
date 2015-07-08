@@ -441,7 +441,7 @@ static void CANTxBuildHeader ( CAN_TX_MSG_TYPE_E tx_msg_type, uint16_t msg_buf[ 
     
     // Structure defining the contents of the CAN message header within the
     // hardware buffer.
-    typedef struct
+    typedef union
     {
         struct
         {
@@ -494,7 +494,7 @@ static void CANTxBuildHeader ( CAN_TX_MSG_TYPE_E tx_msg_type, uint16_t msg_buf[ 
                     0,          // dest_id      - N/A, broadcast message.
                     0,          // src_id       - N/A, set real-time.        
                     0b10,       // tsf_type     - Message broadcast.
-                    21,         // data_type    - 20 identifies VSENSE Status Message.
+                    21,         // data_type    - 21 identifies VSENSE Status Message.
                 },
             },
         },
