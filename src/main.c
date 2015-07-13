@@ -173,6 +173,10 @@ int main ( void )
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief  Main processing thread (10ms period).
+///
+/// This interrupt serves as the primary processing thread and is triggered
+/// by the Timer1 10ms interrupt.  Interrupt priority is configured as '1', so
+/// that the interrupt will preempt background thread execution.
 ////////////////////////////////////////////////////////////////////////////////
 void __interrupt( no_auto_psv ) _T1Interrupt ( void )
 {    
@@ -195,6 +199,11 @@ void __interrupt( no_auto_psv ) _T1Interrupt ( void )
 
 ////////////////////////////////////////////////////////////////////////////////
 /// @brief  System timer update (0.1ms period)
+///
+/// This interrupt serves to update the system time and is triggered by the
+/// Timer2 0.1ms interrupt.  Interrupt priority is configured as '2', so that
+/// the interrupt will preempt background thread and T1Interrupt thread
+/// execution.
 ////////////////////////////////////////////////////////////////////////////////
 void __interrupt( no_auto_psv ) _T2Interrupt ( void )
 {
