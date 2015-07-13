@@ -289,9 +289,9 @@ void CANTxSet ( CAN_TX_MSG_TYPE_E tx_msg_type, const uint16_t payload[ 4 ] )
     uint8_t buf_idx;
     uint8_t payload_idx;
     
-    // Transmission request is not already set - i.e. a tranmission is not
+    // Transmission request is not already set - i.e. a transmission is not
     // already in progress for the transmit buffer ?
-    if( ( *tx_hw_map[ tx_msg_type ].trcon_p & tx_hw_map[ tx_msg_type ].txreq_mask ) != 1 )
+    if( ( *tx_hw_map[ tx_msg_type ].trcon_p & tx_hw_map[ tx_msg_type ].txreq_mask ) == 0 )
     {   
         // Copy buffer index to local variable for processing efficiency
         // and reduced line length.
@@ -311,13 +311,31 @@ void CANTxSet ( CAN_TX_MSG_TYPE_E tx_msg_type, const uint16_t payload[ 4 ] )
         CANTxBuildHeader( tx_msg_type, &can_msg_buf[ buf_idx ][ 0 ] );
         
         // Request (i.e. set request bit to '1') the transmission.
+        //
+        // Note: 
+        //      Since non-atomic read-modify-write operation performed, a
+        //      extremely small possibly exists for duplicate transmission of a
+        //      message.
+        //
+        //      For example, if bit 'TXREQ0' is being updated, and following the
+        //      read operation (of the read-modify-write) the hardware clears 
+        //      bit 'TXREQ1', then the software would unintentionally set the
+        //      'TXREQ1' bit during the write operation - causing 
+        //      re-transmission of the TX1 message.
+        //
+        //      The software could be designed to use the hardware register
+        //      bit-field definitions for accessing the register, which would
+        //      result in the compiler assembling the access to an atomic 
+        //      operation (i.e. BSET), but this yields a less scalable and more 
+        //      complex design.
+        //
         *tx_hw_map[ tx_msg_type ].trcon_p |= tx_hw_map[ tx_msg_type ].txreq_mask;
     }
 }
 
 bool CANRxGet ( CAN_RX_MSG_TYPE_E rx_msg_type, uint16_t payload[ 4 ] )
 {
-    // Structure definition of HW elements corresponding the a message type.
+    // Structure definition of HW elements corresponding to a message type.
     typedef struct
     {
         uint8_t buffer_index;
@@ -360,14 +378,14 @@ bool CANRxGet ( CAN_RX_MSG_TYPE_E rx_msg_type, uint16_t payload[ 4 ] )
     bool    data_rx_flag = false;
     uint8_t buf_idx;
     
-    // Determine buffer index which contains the freshest data.
+    // Iterate through the receive buffers to get the freshest data.
     for( map_idx = 0;
          rx_hw_map[ rx_msg_type ][ map_idx ].rxful_p != NULL;
          map_idx++ )
     {
         // Buffer is full ?
         if( ( *rx_hw_map[ rx_msg_type ][ map_idx ].rxful_p & 
-                    rx_hw_map[ rx_msg_type ][ map_idx ].rxful_mask ) == 1 )
+                    rx_hw_map[ rx_msg_type ][ map_idx ].rxful_mask ) != 0 )
         {
             // Identify data as received.
             data_rx_flag  = true;
@@ -388,6 +406,12 @@ bool CANRxGet ( CAN_RX_MSG_TYPE_E rx_msg_type, uint16_t payload[ 4 ] )
             
             // Clear the receiver buffer flag so the hardware will receive a
             // new message into the buffer.
+            //
+            // Note: Software can only clear (i.e. set to '0') RXFUL register
+            // bits.  Therefore, non-atomic (i.e. read-modify-write) accessing
+            // of RXFUL register bits will yield deterministic behavior since
+            // masked bits are written with a value of '1'.
+            //
             *rx_hw_map[ rx_msg_type ][ map_idx ].rxful_p |= ~rx_hw_map[ rx_msg_type ][ map_idx ].rxful_mask;
         }
     }
