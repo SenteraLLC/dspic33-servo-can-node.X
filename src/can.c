@@ -255,7 +255,7 @@ void CANInit ( void )
     DMA1STAH            = 0x0000;                                               // N/A near memory accessed
     DMA1CONbits.CHEN    = 1;                                                    // Enable the DMA1 channel.            
     
-    C1CTRL1bits.WIN = 0; // select the buffer window for visibility in SFRs.
+    C1CTRL1bits.WIN = 0; // Select the buffer window for visibility in SFRs.
     
     // Request Normal Operating Mode
     C1CTRL1bits.REQOP = 0;
