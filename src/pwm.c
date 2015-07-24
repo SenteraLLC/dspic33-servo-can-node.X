@@ -102,28 +102,12 @@ void PWMInit ( void )
     //  bits     1: SWAP   =  0 - No swap, pins PWM3H/L mapped to respective pins.
     //  bits     0: OSYNC  =  0 - N/A, b/c OVRENL = 0.
     //
-    // Note: Modification of the IOCON3 register is write protected.  An unlock
-    // sequence is required before writing the register in which the '0xABCD' 
-    // and '0x4321' keys must be written to the PWMKEY register before IOCON3 
-    // can be written.  Writing of the IOCON3 must be the next SFR access after
-    // the unlock sequence.
-    //
-    PWMKEY = 0xABCD;
-    PWMKEY = 0x4321;
     IOCON3 = 0x8400;
     
     // PWM3 Fault Current-Limit Control Register
     //
     // bits 1-0: FLTMOD = 0B11 - Fault input is disabled.
     //
-    // Note: Modification of the IOCON3 register is write protected.  An unlock
-    // sequence is required before writing the register in which the '0xABCD' 
-    // and '0x4321' keys must be written to the PWMKEY register before IOCON3 
-    // can be written.  Writing of the IOCON3 must be the next SFR access after
-    // the unlock sequence.
-    //
-    PWMKEY  = 0xABCD;
-    PWMKEY  = 0x4321;
     FCLCON3 = 0x0003;
     
     AUXCON3bits.CHOPHEN = 0; // PWM3H chopping function is disabled.

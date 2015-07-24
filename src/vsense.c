@@ -84,6 +84,10 @@
 
 void VsenseService( void )
 {
+    // CAN message transmitted ever software cycle (10ms).
+    static const uint16_t can_tx_period  = 1;
+    static       uint16_t can_tx_timeout = 0;
+    
     CAN_TX_VSENSE_DATA_U vsense_msg;
     
     uint16_t vsense1_raw;
@@ -149,14 +153,22 @@ void VsenseService( void )
     // VSENSE Annunciation
     ////////////////////////////////////////////////////////////////////////////
     
-    // Construct the vsense CAN message.
-    vsense_msg.vsense1_raw = vsense1_raw;
-    vsense_msg.vsense1_cor = vsense1_cor;
-    vsense_msg.vsense2_raw = vsense2_raw;
-    vsense_msg.vsense2_cor = vsense2_cor;
-    
-    // Send the CAN message.
-    CANTxSet ( CAN_TX_MSG_VSENSE_DATA, vsense_msg.data_u16 );
+    // timeout has elapsed since last CAN message transmission.
+    can_tx_timeout++;
+    if( can_tx_timeout >= can_tx_period )
+    {
+        // reset timeout
+        can_tx_timeout = 0;
+        
+        // Construct the vsense CAN message.
+        vsense_msg.vsense1_raw = vsense1_raw;
+        vsense_msg.vsense1_cor = vsense1_cor;
+        vsense_msg.vsense2_raw = vsense2_raw;
+        vsense_msg.vsense2_cor = vsense2_cor;
+
+        // Send the CAN message.
+        CANTxSet( CAN_TX_MSG_VSENSE_DATA, vsense_msg.data_u16 );
+    }
 }
 
 // *****************************************************************************

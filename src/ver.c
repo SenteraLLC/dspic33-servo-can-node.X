@@ -42,17 +42,29 @@ static const uint32_t serial_num    = 0;
 
 void VerService ( void )
 {
+    // CAN message transmitted ever 50 software cycles (10ms * 50 = 500ms).
+    static const uint16_t can_tx_period  = 50;
+    static       uint16_t can_tx_timeout = 0;
+    
     CAN_TX_NODE_VER_U version_msg;
     
-    // Construct the Version CAN message.
-    version_msg.node_type  = node_type;
-    version_msg.rev_ver    = rev_ver;
-    version_msg.min_ver    = min_ver;
-    version_msg.maj_ver    = maj_ver;
-    version_msg.serial_num = serial_num;
+    // timeout has elapsed since last CAN message transmission.
+    can_tx_timeout++;
+    if( can_tx_timeout >= can_tx_period )
+    {
+        // reset timeout
+        can_tx_timeout = 0;
+        
+        // Construct the Version CAN message.
+        version_msg.node_type  = node_type;
+        version_msg.rev_ver    = rev_ver;
+        version_msg.min_ver    = min_ver;
+        version_msg.maj_ver    = maj_ver;
+        version_msg.serial_num = serial_num;
 
-    // Send the Version message.
-    CANTxSet ( CAN_TX_MSG_NODE_VER, version_msg.data_u16 );
+        // Send the Version message.
+        CANTxSet( CAN_TX_MSG_NODE_VER, version_msg.data_u16 );
+    }
 }
 
 // *****************************************************************************

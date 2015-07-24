@@ -122,14 +122,26 @@ void RSTStartup ( void )
 
 void RSTService ( void )
 {
+    // CAN message transmitted ever 50 software cycles (10ms * 50 = 500ms).
+    static const uint16_t can_tx_period  = 50;
+    static       uint16_t can_tx_timeout = 0;
+    
     CAN_TX_NODE_STATUS_U node_status_msg;
     
-    // Construct the Node Status CAN message.
-    node_status_msg.reset_condition = (uint16_t) rst_cond;
-    node_status_msg.reset_detail    = rst_detail;
-    
-    // Send the Node Status message.
-    CANTxSet ( CAN_TX_MSG_NODE_STATUS, node_status_msg.data_u16 );
+    // timeout has elapsed since last CAN message transmission.
+    can_tx_timeout++;
+    if( can_tx_timeout >= can_tx_period )
+    {
+        // reset timeout
+        can_tx_timeout = 0;
+        
+        // Construct the Node Status CAN message.
+        node_status_msg.reset_condition = (uint16_t) rst_cond;
+        node_status_msg.reset_detail    = rst_detail;
+
+        // Send the Node Status message.
+        CANTxSet( CAN_TX_MSG_NODE_STATUS, node_status_msg.data_u16 );
+    }
 }
 
 // *****************************************************************************

@@ -104,6 +104,10 @@ static uint16_t servo_act_pwm;
 
 void ServoService ( void )
 {
+    // CAN message transmitted ever software cycle (10ms).
+    static const uint16_t can_tx_period  = 1;
+    static       uint16_t can_tx_timeout = 0;
+    
     CAN_RX_SERVO_CMD_U    servo_cmd_msg;
     CAN_TX_SERVO_STATUS_U servo_status_msg;
     
@@ -155,14 +159,22 @@ void ServoService ( void )
     // Update PWM duty cycle with that determined.
     PWMDutySet( servo_act_pwm );
     
-    // Construct the Servo Status CAN message.
-    servo_status_msg.cmd_type_echo = servo_cmd_msg.cmd_type;
-    servo_status_msg.pwm_act       = servo_act_pwm;
-    servo_status_msg.servo_voltage = INA219VoltGet();
-    servo_status_msg.servo_current = INA219AmpGet();
-    
-    // Send the CAN message.
-    CANTxSet( CAN_TX_MSG_SERVO_STATUS, servo_status_msg.data_u16 );
+    // timeout has elapsed since last CAN message transmission.
+    can_tx_timeout++;
+    if( can_tx_timeout >= can_tx_period )
+    {
+        // reset timeout
+        can_tx_timeout = 0;
+        
+        // Construct the Servo Status CAN message.
+        servo_status_msg.cmd_type_echo = servo_cmd_type;
+        servo_status_msg.pwm_act       = servo_act_pwm;
+        servo_status_msg.servo_voltage = INA219VoltGet();
+        servo_status_msg.servo_current = INA219AmpGet();
+
+        // Send the CAN message.
+        CANTxSet( CAN_TX_MSG_SERVO_STATUS, servo_status_msg.data_u16 );
+    }
 }
 
 // *****************************************************************************

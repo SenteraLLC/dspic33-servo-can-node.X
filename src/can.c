@@ -211,7 +211,7 @@ void CANInit ( void )
     C1RXF3SIDbits.EID   = 0x2;      // Set filter 3 match values.
     C1RXF3EID           = node_id;  // Set filter 3 match values.
     
-    C1RXF4SIDbits.SID   = 0x641;    // Set filter 4 match values.
+    C1RXF4SIDbits.SID   = 0x642;    // Set filter 4 match values.
     C1RXF4SIDbits.EXIDE = 1;        // Match messages only with extended ID.
     C1RXF4SIDbits.EID   = 0x2;      // Set filter 4 match values.
     C1RXF4EID           = node_id;  // Set filter 4 match values.
@@ -412,7 +412,7 @@ bool CANRxGet ( CAN_RX_MSG_TYPE_E rx_msg_type, uint16_t payload[ 4 ] )
             // of RXFUL register bits will yield deterministic behavior since
             // masked bits are written with a value of '1'.
             //
-            *rx_hw_map[ rx_msg_type ][ map_idx ].rxful_p |= ~rx_hw_map[ rx_msg_type ][ map_idx ].rxful_mask;
+            *rx_hw_map[ rx_msg_type ][ map_idx ].rxful_p &= ~rx_hw_map[ rx_msg_type ][ map_idx ].rxful_mask;
         }
     }
  
@@ -553,7 +553,7 @@ static void CANTxBuildHeader ( CAN_TX_MSG_TYPE_E tx_msg_type, uint16_t msg_buf[ 
         
         // CAN_TX_MSG_CFG_WRITE_RESP
         {
-            6,              // data_len
+            4,              // data_len
             
             {
                 {

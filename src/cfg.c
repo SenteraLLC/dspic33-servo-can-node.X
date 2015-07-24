@@ -56,11 +56,11 @@ typedef union
 static const CFG_DATA_U __align( 1024 ) cfg_data =
 {
     {
-        0x7F,                   // Initialize node_id to maximum 7-bit value.
-        { 0, 1, 0, 0, 0, 0 },   // Initialize coefficients to 1st-degree polynomial with no scaling.
-        { 0, 1, 0, 0, 0, 0 },   // Initialize coefficients to 1st-degree polynomial with no scaling.
-        { 0, 1, 0, 0, 0, 0 },   // Initialize coefficients to 1st-degree polynomial with no scaling.
-        { 0 },                  // Set reserved storage to '0'.
+        0x7F,                       // Initialize node_id to maximum 7-bit value.
+        { 0, 100000, 0, 0, 0, 0 },  // Initialize coefficients to 1st-degree polynomial with 1E3 output scaling.
+        { 0,  10000, 0, 0, 0, 0 },  // Initialize coefficients to 1st-degree polynomial with 1E1 output scaling.
+        { 0,  10000, 0, 0, 0, 0 },  // Initialize coefficients to 1st-degree polynomial with 1E1 output scaling.
+        { 0 },                      // Set reserved storage to '0'.
     }
 };
 
@@ -212,7 +212,7 @@ static void CfgWrite( void )
         }
         
         // Construct the Write Response message
-        write_resp_payload.cfg_sel      = write_resp_payload.cfg_sel;
+        write_resp_payload.cfg_sel      = write_req_payload.cfg_sel;
         write_resp_payload.fault_status = fault_status;
         
         // Send the Write Response message.
