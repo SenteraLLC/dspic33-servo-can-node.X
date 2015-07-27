@@ -1,142 +1,172 @@
+////////////////////////////////////////////////////////////////////////////////
+/// @file
+/// @brief External current/power monitor (INA219) driver. 
+////////////////////////////////////////////////////////////////////////////////
 
+// *****************************************************************************
+// ************************** System Include Files *****************************
+// *****************************************************************************
 
-#include <xc.h>
-#include <stdint.h>
+// *****************************************************************************
+// ************************** User Include Files *******************************
+// *****************************************************************************
+
 #include "ina219.h"
+#include "i2c.h"
 
-void INA219Task()
+// *****************************************************************************
+// ************************** Defines ******************************************
+// *****************************************************************************
+
+/// INA219 slave address.
+///
+/// @note   INA219 address lines A1 and A0 are electrically grounded.  This 
+///         causes the INA219 slave address to be 0b100_0000.
+#define INA219_SADDR  0x40U
+
+#define INA219_REG_CFG          0x00     ///< Configuration Register Address
+#define INA219_REG_BUS_VOLT     0x02     ///< Bus Voltage Register Address
+#define INA219_REG_CURRENT      0x04     ///< Current Register Address
+#define INA219_REG_CAL          0x05     ///< Calibration Register Address
+
+// *****************************************************************************
+// ************************** Definitions **************************************
+// *****************************************************************************
+
+/// INA219 measured current.
+static uint16_t ina219_amp;
+
+/// INA219 measured voltage.
+static uint16_t ina219_volt;
+
+// *****************************************************************************
+// ************************** Function Prototypes ******************************
+// *****************************************************************************
+
+// *****************************************************************************
+// ************************** Global Functions *********************************
+// *****************************************************************************
+
+void INA219Init ( void )
 {
-    static int state = 1;
-    
-    switch (state)
+    // INA219 Configuration register data definition:
+    //  - byte 1: Configuration register address.
+    //  - byte 2: Configuration register MSB value.
+    //  - byte 3: Configuration register LSB value.
+    //
+    // Configuration register value:
+    //  - RST:   bits    15, 0b0    = peripheral reset is not performed.
+    //  - Spare: bits    14, 0b0
+    //  - BRNG:  bits    13, 0b0    = 16V full scale range is used.  Measured bus voltage (i.e. Vin-) max value expected is less than 10V.
+    //  - PG:    bits 12-11, 0b01   = Shunt voltage range of +-80mV used. At 10A shunt current (max) the shunt voltage is 80mV.
+    //  - BADC   bits 10- 7, 0b1010 = Bus voltage sampled with 12-bit resolution and 4 sample averaging.  2.13ms conversion time.
+    //  - SADC   bits  6- 3, 0b1010 = Shunt voltage sampled with 12-bit resolution and 4 sample averaging.  2.13ms conversion time.
+    //  - MODE   bits  2- 0, 0b111  = Shunt voltage and Bus voltage continuously sampled.
+    //
+    // Note: With 12-bit resolution and a 16V full scale range for the bus
+    // voltage (Vin-), the ATD LSB is: 16V / ( 2 ^ 12 ) ~= 4mV.
+    //
+    // Note: With 12-bit resolution and 80mV positive range for the shunt
+    // voltage, the ATD LSB is: 80mV / ( 2 ^ 12 ) ~= 20uV.
+    //
+    static const uint8_t cfg_reg_data[] = 
     {
-        case 1:
-        {
-            //    1. Assert a Start condition on SDAx and SCLx.
-            I2C1CON1bits.SEN = 1;   // Enable start condition.
-            state++;
-            break;
-        }
-        case 2:
-        {
-            //    2. Send the I2C device address byte to the slave with a write indication.
-            if (I2C1CON1bits.SEN == 0)
-            {
-//                I2C1TRN = INA219_I2C_ADDR << 1;             // Write.
-                I2C1TRN = (INA219_I2C_ADDR << 1) | 0x01;    // Read.
-                state++;
-            }
-            break;
-        }
-        case 3:
-        {
-            //    3. Wait for and verify an Acknowledge from the slave.
-            if (I2C1STATbits.TRSTAT == 0)
-            {
-                if (I2C1STATbits.ACKSTAT == 0)  // Wait for ACK.
-                {
-//                    state++;
-                    state = 6;
-                }
-                else
-                {
-                    // TODO: ack was not received from the slave!
-                    Nop();
-                }
-            }
-            break;
-        }
-        case 4:
-        {
-            //    4. Send the serial memory address high byte to the slave.
-            I2C1TRN = 0x00;
-            state++;
-            break;
-        }
-        case 5:
-        {
-            //    5. Wait for and verify an Acknowledge from the slave.
-            if (I2C1STATbits.TRSTAT == 0)
-            {
-                if (I2C1STATbits.ACKSTAT == 0)  // Wait for ACK.
-                {
-                    state++;
-                }
-                else
-                {
-                    // TODO: ack was not received from the slave!
-                    Nop();
-                }
-            }
-            break;
-        }
-        case 6:
-        {
-            //    11. Enable the master reception to receive serial memory data.
-            I2C1CON1bits.RCEN = 1;
-            state++;
-            break;
-        }
-        case 7:
-        {
-            //    12. Generate an ACK or NACK condition at the end of a received byte of data.
-            if (I2C1CON1bits.RCEN == 0)
-            {
-                I2C1CON1bits.ACKEN = 1;     // Acknowledge Sequence Enable.
-                state++;
-            }
-            break;
-        }
-        case 8:
-        {
-            if (I2C1CON1bits.ACKEN == 0)
-            {
-                I2C1CON1bits.RCEN = 1;
-                state++;
-            }
-            break;
-        }
-        case 9:
-        {
-            if (I2C1CON1bits.RCEN == 0)
-            {
-                Nop();
-            }
-        }
-    }
-}
-
-
-//==============================================================================
-
-//int INA219WriteReg(INA219_REG_E reg, uint16_t data)
-//{
-//    
-//}
-
-//==============================================================================
-
-//int INA219ReadReg(INA219_REG_E reg, uint8_t *data)
-//{
-//    
-//}
-
-
-//==============================================================================
-
-void __attribute__((__interrupt__, no_auto_psv)) _I2C1Interrupt(void)
-{
+        INA219_REG_CFG,
+        0b00001101,
+        0b01010111,
+    };
     
+    // INA219 Calibration register data definition:
+    //  - byte 1: Calibration register address.
+    //  - byte 2: Calibration register MSB value.
+    //  - byte 3: Calibration register LSB value.
+    //
+    // INA219 datasheet Calibration register calculation:
+    // (1) Vbus_max     = 10V
+    //     Vshunt_max   = 80mV
+    //     Rshunt       = 8mOhms
+    //
+    // (2) MaxPossible_I = 80mV / 8mOhms = 10A
+    //
+    // (3) Max_Expected_I, chosen as MaxPossible_I (10A).
+    //
+    // (4) Min_LSB = 10A / 2^15 ~= 3.0E-4
+    //     Max_LSB = 10A / 2^12 ~= 2.4E-3
+    //     Current_LSB chosen as 1mA
+    //
+    // (5) Cal = trunc( 0.04096 / ( Current_LSB * Rshunt ) ) = 5120 = 0x1400
+    //
+    static const uint8_t cal_reg_data[] = 
+    {
+        INA219_REG_CAL,
+        0x14,
+        0x00,
+    };
+    
+    // Program the INA219 Configuration register.
+    I2CWrite( INA219_SADDR, &cfg_reg_data[ 0 ], sizeof( cfg_reg_data ) );
+    
+    // Program the INA219 Calibration register.
+    I2CWrite( INA219_SADDR, &cal_reg_data[ 0 ], sizeof( cal_reg_data ) );    
 }
 
-// ? Start condition
-// ? Stop condition
-// ? Data transfer byte transmitted or received
-// ? Acknowledge transmit
-// ? Repeated Start
-// ? Detection of a bus collision event
+void INA219Service ( void )
+{
+    static const uint8_t volt_sel_data[] = 
+    {
+        INA219_REG_BUS_VOLT,
+    };
+    
+    static const uint8_t amp_sel_data[] = 
+    {
+        INA219_REG_CURRENT,
+    };
+    
+    uint16_t volt_reg_val;
+    int16_t  amp_reg_val;
+    
+    // Select the Bus Voltage register for the subsequent read operation.
+    I2CWrite( INA219_SADDR, &volt_sel_data[ 0 ], sizeof( volt_sel_data ) );
+    
+    // Read the Bus Voltage (Vin-) value.
+    I2CRead( INA219_SADDR, (uint8_t*) &volt_reg_val, sizeof ( volt_reg_val ) );
+    
+    // 1. Remove Bus Voltage offset - within the INA219 register, the value
+    // is positioned at bits 14-3.
+    //
+    // 2. Scale the Bus Voltage to an LSb of 1mV.  With the peripheral's
+    // configuration (see initialization function), the values scaling is 
+    // an LSb of 4mV.  Therefore, the value need to be multiplied by 4.
+    //
+    ina219_volt = volt_reg_val >> 3;
+    ina219_volt = ina219_volt  << 2;
+    
+    // Select the Current register for the subsequent read operation.
+    I2CWrite( INA219_SADDR, &amp_sel_data[ 0 ], sizeof( amp_sel_data ) );
+    
+    // Read the Current value.
+    I2CRead( INA219_SADDR, (uint8_t*) &amp_reg_val, sizeof ( amp_reg_val ) );
+    
+    // Saturate current to a positive value.  The INA219 current register is a
+    // signed value, but negative current is not expected.
+    if ( amp_reg_val < 0 )
+    {
+        amp_reg_val = 0;
+    }
+    
+    ina219_amp = amp_reg_val;
+}
 
+uint16_t INA219AmpGet ( void )
+{
+    return ina219_amp;
+}
 
-
-
-
+uint16_t INA219VoltGet ( void )
+{
+    return ina219_volt;
+}
+        
+// *****************************************************************************
+// ************************** Static Functions *********************************
+// *****************************************************************************
