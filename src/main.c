@@ -48,7 +48,10 @@
 #pragma config AIVTDIS  = DISABLE       // Alternate Interrupt Vector Table Disable Bit  (Disable Alternate Vector Table)
 
 // FBSLIM
-#pragma config BSLIM    = 0x1FFD        // Boot Segment Code Flash Page Address Limit Bits (Boot Segment Flash Page Address Limit (0-0x1FFF)) - N/A Alternative interrupts not used.
+// Note: Register is not explicitely set.  Definition of serial number in 
+// Program Memory at specific address causes compiler warning when BSLIM is
+// also set (even through the Boot Segment is not used - see BSS2).  Therefore,
+// FBSLIM will be its default value.
 
 // FOSCSEL
 #pragma config FNOSC    = PRIPLL        // Initial oscillator Source Selection Bits (Primary Oscillator with PLL module (XT + PLL, HS + PLL, EC + PLL))

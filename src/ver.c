@@ -23,14 +23,18 @@
 // *****************************************************************************
 
 /// The node type - value of '1' identifies node as a Servo CAN Node.
-static const uint8_t  node_type     = 1;
+static const uint8_t  node_type = 1;
 
-static const uint8_t  rev_ver       = 0;    ///< Version revision number.
-static const uint8_t  min_ver       = 0;    ///< Version minor number.
-static const uint8_t  maj_ver       = 0;    ///< Version major number.
+static const uint8_t  rev_ver   = 0;    ///< Version revision number.
+static const uint8_t  min_ver   = 0;    ///< Version minor number.
+static const uint8_t  maj_ver   = 0;    ///< Version major number.
 
 /// The serial number - set during manufacturing.
-static const uint32_t serial_num    = 0;
+///
+/// @note The serial number is set to the starting address of Program
+///       memory.
+///
+ static const uint32_t __attribute__((space(psv))) __at(0x200) serial_num = 0;
 
 // *****************************************************************************
 // ************************** Function Prototypes ******************************
