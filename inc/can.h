@@ -120,7 +120,6 @@ typedef union
     {
         uint16_t cfg_sel;
         uint16_t fault_status;
-        uint16_t fault_detail;
     };
     
 } CAN_TX_WRITE_RESP_U;
