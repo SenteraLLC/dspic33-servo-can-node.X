@@ -27,7 +27,7 @@ static const uint8_t  node_type = 1;
 
 static const uint8_t  rev_ver   = 0;    ///< Version revision number.
 static const uint8_t  min_ver   = 0;    ///< Version minor number.
-static const uint8_t  maj_ver   = 0;    ///< Version major number.
+static const uint8_t  maj_ver   = 1;    ///< Version major number.
 
 /// The serial number - set during manufacturing.
 ///
