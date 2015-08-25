@@ -6,6 +6,8 @@
 build/
 debug/
 dist/
+disassembly/
+doxygen/
 nbproject/private/
 nbproject/Makefile-*
 nbproject/Package-*
