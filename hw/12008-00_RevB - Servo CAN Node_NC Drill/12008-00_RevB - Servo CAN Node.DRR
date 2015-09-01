@@ -1,0 +1,15 @@
+---------------------------------------------------------------------------
+NCDrill File Report For: 12008 - Servo CAN Node.PcbDoc   7/20/2015  10:08:34 AM
+---------------------------------------------------------------------------
+
+Layer Pair : Top to Bottom
+ASCII RoundHoles File : 12008-00_RevB - Servo CAN Node.TXT
+
+Tool         Hole Size           Hole Type     Hole Count Plated       Tool Travel
+---------------------------------------------------------------------------
+T1        10mil (0.254mm)          Round          34               3.62 Inch (91.83 mm)
+T2        40.2mil (1.02108mm)      Round          6                1.03 Inch (26.16 mm)
+---------------------------------------------------------------------------
+Totals                                            40               4.65 Inch (117.99 mm)
+
+Total Processing Time (hh:mm:ss) : 00:00:00
