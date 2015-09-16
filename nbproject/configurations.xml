@@ -274,7 +274,7 @@
       </PICkit3PlatformTool>
       <RealICEPlatformTool>
         <property key="ADC 1" value="true"/>
-        <property key="AutoSelectMemRanges" value="auto"/>
+        <property key="AutoSelectMemRanges" value="manual"/>
         <property key="COMPARATOR" value="true"/>
         <property key="CTMU" value="true"/>
         <property key="I2C 1" value="true"/>
@@ -333,9 +333,9 @@
         <property key="programoptions.eraseb4program" value="true"/>
         <property key="programoptions.preservedataflash" value="false"/>
         <property key="programoptions.preserveeeprom" value="false"/>
-        <property key="programoptions.preserveprogramrange" value="false"/>
-        <property key="programoptions.preserveprogramrange.end" value="0x2ab7f"/>
-        <property key="programoptions.preserveprogramrange.start" value="0x0"/>
+        <property key="programoptions.preserveprogramrange" value="true"/>
+        <property key="programoptions.preserveprogramrange.end" value="0x2FF"/>
+        <property key="programoptions.preserveprogramrange.start" value="0x200"/>
         <property key="programoptions.preserveuserid" value="false"/>
         <property key="programoptions.programcalmem" value="false"/>
         <property key="programoptions.programuserotp" value="false"/>
