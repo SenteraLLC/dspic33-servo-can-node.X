@@ -3,7 +3,7 @@
 Initial development performed by partnership of [Sentera, LLC](https://sentera.com/) and [University of Minnesota](http://www.uav.aem.umn.edu/).
 
 ## System Overview
-![System Diagram](/doc/System%20Diagram.png?raw=true "System Diagram")
+![System Diagram](/doc/System%20Diagram.jpg?raw=true "System Diagram")
 
 The CAN Servo-Node is designed as a component of the Flight Management System.  The CAN Servo-Node is a Microchip dsPIC33 based module with the primary function of receiving servo commands over a CAN bus, and controlling power to a servo based on those commands.  CAN communication is documented in file [UMN FMU Communication Protocol](https://github.com/SenteraLLC/pic32-fmu.X/blob/master/doc/UMN%20FMU%20Communication%20Protocol.docx).  When commanding the position of a servo, the software performs servo calibration correction so the required PWM value is applied to the servo.
 
