@@ -7,7 +7,8 @@ build/
 debug/
 dist/
 disassembly/
-doxygen/
+doxygen/html/
+doxygen/latex/
 nbproject/private/
 nbproject/Makefile-*
 nbproject/Package-*
